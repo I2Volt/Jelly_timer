@@ -6,3 +6,14 @@ dist/
 *.spec
 .DS_Store
 Thumbs.db
+
+# Private / Commercial PRO files (never pushed to public GitHub)
+jelly_timer_pro.py
+jelly_timer_pro.pyw
+setup_pro_shortcut.py
+config_pro.json
+stats_pro.json
+jelly_timer_pro.ico
+jelly_timer_pro.png
+icons_export/
+browser_extension_pro/
