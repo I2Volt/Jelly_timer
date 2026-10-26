@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Jelly Timer — Floating Timer & Stopwatch",
+  "version": "1.0.0",
+  "description": "Minimalist floating timer & stopwatch with magnetic edge-snap, jelly peel-off physics, cross-tab sync, and writer-friendly hotkeys.",
+  "permissions": [
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Toggle Jelly Timer on this tab"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

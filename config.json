@@ -1,0 +1,29 @@
+{
+  "mode": "timer",
+  "size_mode": "medium",
+  "theme_key": "graphite",
+  "bg_opacity": 0.9,
+  "snap_enabled": true,
+  "global_hotkeys_v2": false,
+  "hotkeys": {
+    "play_pause": {
+      "vk": 81,
+      "name": "Q"
+    },
+    "reset": {
+      "vk": 82,
+      "name": "R"
+    },
+    "switch_mode": {
+      "vk": 77,
+      "name": "M"
+    },
+    "cycle_size": {
+      "vk": 83,
+      "name": "S"
+    }
+  },
+  "timer_total": 2700.0,
+  "x": 662,
+  "y": 52
+}
