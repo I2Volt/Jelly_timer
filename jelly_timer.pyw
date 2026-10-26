@@ -156,8 +156,6 @@ class CrossPlatformHotkeyMonitor(QObject):
     def _on_pynput_press(self, key):
         if self.w.editing_time:
             return
-        if not self.w.global_hotkeys and not (self.w.underMouse() or self.w.isActiveWindow()):
-            return
         token = self._normalize_pynput_key(key)
         if not token or token in self.held_tokens:
             return
@@ -168,7 +166,19 @@ class CrossPlatformHotkeyMonitor(QObject):
         if other_mods:
             return
 
+        # Summon hotkey always works globally
+        summon_hk = self.w.hotkeys.get("summon", {})
+        if summon_hk.get("name", "").upper() == token.upper():
+            self.hotkey_triggered.emit("summon")
+            return
+
+        active_ok = self.w.global_hotkeys or self.w.summoned_focus or self.w.underMouse() or self.w.isActiveWindow()
+        if not active_ok:
+            return
+
         for action_key, hk in self.w.hotkeys.items():
+            if action_key == "summon":
+                continue
             if hk.get("name", "").upper() == token.upper():
                 self.hotkey_triggered.emit(action_key)
 
@@ -445,7 +455,7 @@ class SettingsDialog(QDialog):
         self.w = parent_widget
         self.setWindowTitle("Настройки")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
-        self.setFixedSize(370, 385)
+        self.setFixedSize(390, 460)
         self.setStyleSheet(f"""
             QDialog {{
                 background-color: #18181B;
@@ -454,7 +464,7 @@ class SettingsDialog(QDialog):
             }}
             QLabel {{
                 color: #D4D4D8;
-                font-size: 13px;
+                font-size: 12px;
             }}
             QCheckBox {{
                 color: #E4E4E7;
@@ -473,8 +483,8 @@ class SettingsDialog(QDialog):
         """)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 18, 18, 18)
-        layout.setSpacing(11)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
 
         title = QLabel("Горячие клавиши")
         title.setStyleSheet("font-size: 14px; font-weight: 600; color: #FAFAFA;")
@@ -482,6 +492,7 @@ class SettingsDialog(QDialog):
 
         self.buttons = {}
         rows = [
+            ("summon", "Вызвать / Выбрать таймер:"),
             ("play_pause", "Старт / Пауза:"),
             ("reset", "Сброс:"),
             ("switch_mode", "Таймер / Секундомер:"),
@@ -491,6 +502,8 @@ class SettingsDialog(QDialog):
         for k, label_text in rows:
             row = QHBoxLayout()
             lbl = QLabel(label_text)
+            if k == "summon":
+                lbl.setStyleSheet("color: #FAFAFA; font-weight: 600;")
             hk = self.w.hotkeys[k]
             btn = KeyCaptureButton(hk["vk"], hk["name"], self)
             btn.setFixedWidth(135)
@@ -500,12 +513,20 @@ class SettingsDialog(QDialog):
             row.addWidget(btn)
             layout.addLayout(row)
 
-        self.global_cb = QCheckBox("Работать поверх любых окон (в браузере и играх)")
+        summon_hint = QLabel(
+            "Нажмите клавишу вызова в любой момент — таймер подсветится и начнёт слушать кнопки управления. "
+            "Нажмите её повторно или кликните в другое окно, чтобы отключить перехват клавиш."
+        )
+        summon_hint.setWordWrap(True)
+        summon_hint.setStyleSheet("color: #A1A1AA; font-size: 11px; background: #222226; padding: 6px 8px; border-radius: 6px;")
+        layout.addWidget(summon_hint)
+
+        self.global_cb = QCheckBox("Слушать все клавиши всегда (даже без вызова таймера)")
         self.global_cb.setChecked(self.w.global_hotkeys)
         layout.addWidget(self.global_cb)
 
         presets_lbl = QLabel("Пресеты большого режима (мин, через запятую):")
-        presets_lbl.setStyleSheet("font-size: 12px; color: #A1A1AA; margin-top: 4px;")
+        presets_lbl.setStyleSheet("font-size: 12px; color: #A1A1AA; margin-top: 2px;")
         layout.addWidget(presets_lbl)
 
         self.presets_edit = QLineEdit(", ".join(str(m) for m in self.w.presets))
@@ -618,10 +639,13 @@ class JellyTimerWidget(QWidget):
         self.theme_key = "graphite"
         self.bg_opacity = 0.88
         self.snap_enabled = True
-        self.global_hotkeys = True
+        self.global_hotkeys = False
+        self.summoned_focus = False
+        self.prev_foreground_hwnd = 0
         self.presets = [5, 15, 25, 45, 60]
 
         self.hotkeys = {
+            "summon":      {"vk": 0xA3, "name": "Right Ctrl"},
             "play_pause":  {"vk": 0x20, "name": "Space"},
             "reset":       {"vk": 0x52, "name": "R"},
             "switch_mode": {"vk": 0x4D, "name": "M"},
@@ -691,10 +715,7 @@ class JellyTimerWidget(QWidget):
                 self.theme_key = data.get("theme_key", self.theme_key)
                 self.bg_opacity = float(data.get("bg_opacity", self.bg_opacity))
                 self.snap_enabled = bool(data.get("snap_enabled", self.snap_enabled))
-                if "global_hotkeys_v2" in data:
-                    self.global_hotkeys = bool(data["global_hotkeys_v2"])
-                else:
-                    self.global_hotkeys = True
+                self.global_hotkeys = bool(data.get("global_hotkeys_v3", False))
                 if isinstance(data.get("presets"), list) and data["presets"]:
                     self.presets = [int(x) for x in data["presets"] if int(x) > 0][:6]
                 self.timer_total = float(data.get("timer_total", self.timer_total))
@@ -719,7 +740,7 @@ class JellyTimerWidget(QWidget):
                 "theme_key": self.theme_key,
                 "bg_opacity": self.bg_opacity,
                 "snap_enabled": self.snap_enabled,
-                "global_hotkeys_v2": self.global_hotkeys,
+                "global_hotkeys_v3": self.global_hotkeys,
                 "presets": self.presets,
                 "hotkeys": self.hotkeys,
                 "timer_total": self.timer_total,
@@ -732,13 +753,41 @@ class JellyTimerWidget(QWidget):
             pass
 
     def is_reset_available(self) -> bool:
-        """Reset button is only shown when the clock is actively running or has progressed away from initial state."""
         if self.is_running:
             return True
         if self.mode == "timer":
             return abs(self.timer_remaining - self.timer_total) > 0.05
         else:
             return self.stopwatch_elapsed > 0.05
+
+    def toggle_summon_focus(self):
+        """Toggles active focus state of the widget via the Summon hotkey."""
+        if self.summoned_focus:
+            self.summoned_focus = False
+            self.clearFocus()
+            if IS_WIN and self.prev_foreground_hwnd:
+                try:
+                    ctypes.windll.user32.SetForegroundWindow(self.prev_foreground_hwnd)
+                except Exception:
+                    pass
+            self.trigger_jelly(vx=-1.1, vy=1.1)
+        else:
+            if IS_WIN:
+                try:
+                    fg = ctypes.windll.user32.GetForegroundWindow()
+                    if fg and fg != int(self.winId()):
+                        self.prev_foreground_hwnd = fg
+                    ctypes.windll.user32.SetForegroundWindow(int(self.winId()))
+                except Exception:
+                    pass
+            self.summoned_focus = True
+            self.activateWindow()
+            self.setFocus()
+            self.trigger_jelly(vx=1.4, vy=-1.4)
+
+    def focusOutEvent(self, event):
+        self.summoned_focus = False
+        super().focusOutEvent(event)
 
     def enforce_topmost_crossplatform(self):
         if IS_WIN:
@@ -851,13 +900,38 @@ class JellyTimerWidget(QWidget):
             self.prev_vk_state.clear()
             return
 
-        active_ok = self.global_hotkeys or self.underMouse() or self.isActiveWindow()
+        u32 = ctypes.windll.user32
+
+        # Automatically clear summoned_focus if user clicked into another application window
+        if self.summoned_focus:
+            fg = u32.GetForegroundWindow()
+            if fg and fg != int(self.winId()) and not self.underMouse():
+                self.summoned_focus = False
+
+        # 1. Always check the Summon hotkey globally
+        summon_hk = self.hotkeys.get("summon", {})
+        summon_vk = summon_hk.get("vk", 0)
+        if summon_vk:
+            st = u32.GetAsyncKeyState(summon_vk)
+            is_down = (st & 0x8000) != 0
+            was_down = self.prev_vk_state.get(summon_vk, False)
+            self.prev_vk_state[summon_vk] = is_down
+            if is_down and not was_down:
+                if not self.is_other_modifier_pressed_win32(summon_vk):
+                    self.toggle_summon_focus()
+                    return
+
+        # 2. Check other hotkeys only when summoned, under mouse, active window, or global_hotkeys is enabled
+        active_ok = self.global_hotkeys or self.summoned_focus or self.underMouse() or self.isActiveWindow()
         if not active_ok:
-            self.prev_vk_state.clear()
+            for action_key, hk in self.hotkeys.items():
+                if action_key != "summon":
+                    self.prev_vk_state[hk.get("vk", 0)] = False
             return
 
-        u32 = ctypes.windll.user32
         for action_key, hk in self.hotkeys.items():
+            if action_key == "summon":
+                continue
             vk = hk.get("vk", 0)
             if not vk:
                 continue
@@ -871,7 +945,9 @@ class JellyTimerWidget(QWidget):
             self.prev_vk_state[vk] = is_down
 
     def execute_hotkey_action(self, action_key):
-        if action_key == "play_pause":
+        if action_key == "summon":
+            self.toggle_summon_focus()
+        elif action_key == "play_pause":
             self.toggle_play()
         elif action_key == "reset":
             self.reset_clock()
@@ -1062,6 +1138,10 @@ class JellyTimerWidget(QWidget):
                 return
             return
 
+        if event.key() == Qt.Key.Key_Escape and self.summoned_focus:
+            self.toggle_summon_focus()
+            return
+
         super().keyPressEvent(event)
 
     def _seconds_to_str(self, seconds):
@@ -1222,7 +1302,11 @@ class JellyTimerWidget(QWidget):
         path.addRoundedRect(card_rect, radius, radius)
         painter.fillPath(path, bg_color)
 
-        painter.setPen(QPen(QColor(brd_rgb[0], brd_rgb[1], brd_rgb[2], 160), 1.0))
+        # Subtle silver-white border highlight when summoned via hotkey
+        if self.summoned_focus:
+            painter.setPen(QPen(QColor(244, 244, 245, 220), 1.5))
+        else:
+            painter.setPen(QPen(QColor(brd_rgb[0], brd_rgb[1], brd_rgb[2], 160), 1.0))
         painter.drawPath(path)
 
         if self.mode == "timer" and self.timer_total > 0:
@@ -1322,7 +1406,6 @@ class JellyTimerWidget(QWidget):
         clock_rect = QRectF(12, 34, w - 24, 56)
         self.draw_time_box(painter, clock_rect, 32, theme, align=Qt.AlignmentFlag.AlignCenter)
 
-        # Clean Medium bottom bar: only Start/Pause, plus Reset ONLY when active/progressed
         y_btn = h - 38
         play_lbl = "Пауза" if self.is_running else "Старт"
         play_ic = "pause" if self.is_running else "play"
@@ -1602,8 +1685,8 @@ class JellyTimerWidget(QWidget):
             act_edit = None
         menu.addSeparator()
 
-        act_keys = menu.addAction("Настройки (Клавиши, пресеты, прозрачность)...")
-        act_global_hk = menu.addAction("Глобальные клавиши (в браузере/играх)" + (" ✓" if self.global_hotkeys else ""))
+        act_keys = menu.addAction("Настройки (Клавиша вызова, пресеты)...")
+        act_global_hk = menu.addAction("Слушать все клавиши всегда" + (" ✓" if self.global_hotkeys else ""))
         menu.addSeparator()
 
         size_menu = menu.addMenu("Размер")
