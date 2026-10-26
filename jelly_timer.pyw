@@ -654,7 +654,7 @@ class SettingsDialog(QDialog):
         self.w = parent_widget
         self.setWindowTitle("Настройки")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
-        self.setFixedSize(390, 490)
+        self.setMinimumWidth(430)
         self.setStyleSheet(f"""
             QDialog {{
                 background-color: #18181B;
@@ -713,11 +713,12 @@ class SettingsDialog(QDialog):
             layout.addLayout(row)
 
         summon_hint = QLabel(
-            "Нажмите клавишу вызова в любой момент — таймер подсветится и начнёт слушать кнопки управления. "
-            "Нажмите её повторно или кликните в другое окно, чтобы отключить перехват клавиш."
+            "Нажмите клавишу вызова в любой момент — таймер подсветится белой рамкой и начнёт слушать кнопки управления. "
+            "Нажмите её повторно или кликните мышкой в другое окно, чтобы отключить перехват клавиш."
         )
         summon_hint.setWordWrap(True)
-        summon_hint.setStyleSheet("color: #A1A1AA; font-size: 11px; background: #222226; padding: 6px 8px; border-radius: 6px;")
+        summon_hint.setMinimumHeight(56)
+        summon_hint.setStyleSheet("color: #D4D4D8; font-size: 11.5px; background: #222226; padding: 8px 10px; border-radius: 6px;")
         layout.addWidget(summon_hint)
 
         self.global_cb = QCheckBox("Слушать все клавиши всегда (даже без вызова таймера)")
@@ -1218,7 +1219,28 @@ class JellyTimerWidget(QWidget):
         self.snap_preview.step_animation(phys_dt)
 
         self.update_window_geometry()
-        self.update()
+        sig = (
+            self.format_time(self.timer_remaining if self.mode == "timer" else self.stopwatch_elapsed),
+            self.mode,
+            self.size_mode,
+            self.theme_key,
+            round(self.bg_opacity, 3),
+            self.is_running,
+            self.hovered_btn,
+            self.summoned_focus,
+            self.editing_time,
+            self.edit_cursor,
+            int(time.perf_counter() * 2.2) % 2 if self.editing_time else 0,
+            round(self.alarm_flash, 2),
+            round(self.sp_w.value, 1),
+            round(self.sp_h.value, 1),
+            round(self.sp_scale_x.value, 3),
+            round(self.sp_scale_y.value, 3),
+            tuple(self.presets),
+        )
+        if sig != getattr(self, "_last_paint_sig", None):
+            self._last_paint_sig = sig
+            self.update()
 
     def update_window_geometry(self, force=False):
         pad = self.canvas_pad
@@ -1227,8 +1249,10 @@ class JellyTimerWidget(QWidget):
         win_w = int(round(self.sp_w.value + pad * 2))
         win_h = int(round(self.sp_h.value + pad * 2))
 
-        if force or self.x() != win_x or self.y() != win_y or self.width() != win_w or self.height() != win_h:
+        if force or self.width() != win_w or self.height() != win_h:
             self.setGeometry(win_x, win_y, win_w, win_h)
+        elif self.x() != win_x or self.y() != win_y:
+            self.move(win_x, win_y)
 
     def set_size_mode(self, mode):
         if mode not in self.SIZES:
@@ -1768,6 +1792,7 @@ class JellyTimerWidget(QWidget):
 
         self.sp_x.set_immediate(raw_x)
         self.sp_y.set_immediate(raw_y)
+        self.update_window_geometry()
 
         edge, snap_rect = self.compute_snap_candidate(raw_x, raw_y, self.sp_w.value, self.sp_h.value, cursor_pt=global_pt)
         if edge and snap_rect:
@@ -1969,7 +1994,29 @@ class JellyTimerWidget(QWidget):
             QApplication.quit()
 
 
+def _ensure_single_instance(lock_name: str):
+    pid_file = os.path.join(tempfile.gettempdir(), lock_name)
+    if os.path.exists(pid_file):
+        try:
+            with open(pid_file, "r", encoding="utf-8") as f:
+                old_pid = int(f.read().strip())
+            if old_pid != os.getpid():
+                if IS_WIN:
+                    subprocess.run(["taskkill", "/F", "/PID", str(old_pid)], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                else:
+                    import signal
+                    os.kill(old_pid, signal.SIGTERM)
+        except Exception:
+            pass
+    try:
+        with open(pid_file, "w", encoding="utf-8") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+
+
 def main():
+    _ensure_single_instance("jelly_timer_free.pid")
     app = QApplication(sys.argv)
     widget = JellyTimerWidget()
     widget.show()
