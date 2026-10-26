@@ -1,11 +1,22 @@
 {
   "mode": "timer",
-  "size_mode": "medium",
+  "size_mode": "large",
   "theme_key": "graphite",
-  "bg_opacity": 0.9,
+  "bg_opacity": 0.8,
   "snap_enabled": true,
-  "global_hotkeys_v2": false,
+  "global_hotkeys_v3": false,
+  "presets": [
+    5,
+    15,
+    25,
+    45,
+    60
+  ],
   "hotkeys": {
+    "summon": {
+      "vk": 163,
+      "name": "Right Ctrl"
+    },
     "play_pause": {
       "vk": 81,
       "name": "Q"
@@ -23,7 +34,7 @@
       "name": "S"
     }
   },
-  "timer_total": 2700.0,
-  "x": 662,
-  "y": 52
+  "timer_total": 1500.0,
+  "x": 1282.0,
+  "y": 190.0
 }
