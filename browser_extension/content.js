@@ -343,6 +343,8 @@
     const modeLabel = state.mode === "timer" ? "Таймер" : "Секундомер";
     const playIcon = state.isRunning ? SVGS.pause : SVGS.play;
     const playLabel = state.isRunning ? "Пауза" : "Старт";
+    const liveSec = getLiveSeconds();
+    const showReset = state.isRunning || (state.mode === "timer" ? Math.abs(liveSec - state.timerTotal) > 0.1 : liveSec > 0.1);
 
     if (state.sizeMode === "mini") {
       cardEl.style.flexDirection = "row";
@@ -367,18 +369,10 @@
             <button class="btn" data-act="close" style="width:22px;height:22px;padding:0;">${SVGS.close}</button>
           </div>
         </div>
-        <div class="time-box" data-act="time_box" style="font-size:31px;margin:2px 0;"></div>
+        <div class="time-box" data-act="time_box" style="font-size:32px;margin:2px 0;"></div>
         <div class="bottom-row" style="justify-content:center;">
-          ${state.mode === "timer" ? `
-            <button class="btn" data-act="sub_1m" style="height:26px;">-1м</button>
-            <button class="btn primary" data-act="play" style="height:26px;flex:1;">${playIcon} <span>${playLabel}</span></button>
-            <button class="btn" data-act="reset" style="width:32px;height:26px;padding:0;">${SVGS.reset}</button>
-            <button class="btn" data-act="add_1m" style="height:26px;">+1м</button>
-            <button class="btn" data-act="add_5m" style="height:26px;">+5м</button>
-          ` : `
-            <button class="btn primary" data-act="play" style="height:26px;width:96px;">${playIcon} <span>${playLabel}</span></button>
-            <button class="btn" data-act="reset" style="width:34px;height:26px;padding:0;">${SVGS.reset}</button>
-          `}
+          <button class="btn primary" data-act="play" style="height:26px;width:108px;">${playIcon} <span>${playLabel}</span></button>
+          ${showReset ? `<button class="btn" data-act="reset" style="width:34px;height:26px;padding:0;">${SVGS.reset}</button>` : ""}
         </div>
         ${state.mode === "timer" ? `<div class="progress-track"><div class="progress-fill"></div></div>` : ""}
       `;
@@ -406,13 +400,15 @@
         ` : ""}
         <div class="bottom-row" style="justify-content:center;">
           ${state.mode === "timer" ? `
-            <button class="btn" data-act="sub_1m" style="height:28px;">-1 мин</button>
+            <button class="btn" data-act="sub_5m" style="height:28px;">-5м</button>
+            <button class="btn" data-act="sub_1m" style="height:28px;">-1м</button>
             <button class="btn primary" data-act="play" style="height:28px;flex:1;">${playIcon} <span>${playLabel}</span></button>
-            <button class="btn" data-act="reset" style="width:40px;height:28px;padding:0;">${SVGS.reset}</button>
-            <button class="btn" data-act="add_1m" style="height:28px;">+1 мин</button>
+            ${showReset ? `<button class="btn" data-act="reset" style="width:36px;height:28px;padding:0;">${SVGS.reset}</button>` : ""}
+            <button class="btn" data-act="add_1m" style="height:28px;">+1м</button>
+            <button class="btn" data-act="add_5m" style="height:28px;">+5м</button>
           ` : `
-            <button class="btn primary" data-act="play" style="height:28px;width:110px;">${playIcon} <span>${playLabel}</span></button>
-            <button class="btn" data-act="reset" style="width:38px;height:28px;padding:0;">${SVGS.reset}</button>
+            <button class="btn primary" data-act="play" style="height:28px;width:116px;">${playIcon} <span>${playLabel}</span></button>
+            ${showReset ? `<button class="btn" data-act="reset" style="width:38px;height:28px;padding:0;">${SVGS.reset}</button>` : ""}
           `}
         </div>
         ${state.mode === "timer" ? `<div class="progress-track"><div class="progress-fill"></div></div>` : ""}
@@ -635,7 +631,8 @@
         if (Math.abs(p - state.opacity) < best) { best = Math.abs(p - state.opacity); idx = i; }
       });
       sendMsg({ type: "PATCH_STATE", patch: { opacity: presets[(idx + 1) % presets.length] } });
-    } else if (act === "sub_1m") sendMsg({ type: "ADJUST_TIMER", delta: -60 });
+    } else if (act === "sub_5m") sendMsg({ type: "ADJUST_TIMER", delta: -300 });
+    else if (act === "sub_1m") sendMsg({ type: "ADJUST_TIMER", delta: -60 });
     else if (act === "add_1m") sendMsg({ type: "ADJUST_TIMER", delta: 60 });
     else if (act === "add_5m") sendMsg({ type: "ADJUST_TIMER", delta: 300 });
     else if (act.startsWith("preset_")) {

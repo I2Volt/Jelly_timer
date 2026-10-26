@@ -7,7 +7,7 @@ import platform
 import subprocess
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QMenu, QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QSlider, QCheckBox
+    QLabel, QPushButton, QSlider, QCheckBox, QLineEdit
 )
 from PyQt6.QtCore import Qt, QTimer, QRectF, QPointF, QByteArray, pyqtSignal, QObject
 from PyQt6.QtGui import (
@@ -35,7 +35,6 @@ if IS_WIN:
     SWP_NOACTIVATE = 0x0010
     SWP_SHOWWINDOW = 0x0040
 
-# System-native clean UI font family
 UI_FONT = "SF Pro Display" if IS_MAC else ("Ubuntu" if IS_LINUX else "Segoe UI")
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
@@ -68,7 +67,6 @@ def play_system_alarm():
     QApplication.beep()
 
 
-# Standard Lucide SVG vector paths (24x24 viewBox)
 LUCIDE_SVGS = {
     "play": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{color}" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
     "pause": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{color}" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',
@@ -102,10 +100,7 @@ def render_svg_icon(painter: QPainter, name: str, rect: QRectF, color: QColor):
 
 
 class CrossPlatformHotkeyMonitor(QObject):
-    """
-    Universal background hotkey listener supporting Windows, macOS, and Linux.
-    Works even when browser or another fullscreen app is focused!
-    """
+    """Universal background hotkey listener supporting Windows, macOS, and Linux."""
     hotkey_triggered = pyqtSignal(str)
 
     def __init__(self, widget):
@@ -168,7 +163,6 @@ class CrossPlatformHotkeyMonitor(QObject):
             return
         self.held_tokens.add(token)
 
-        # Prevent combos like Alt+Tab or Cmd+Tab from firing single-key hotkeys
         mod_tokens = {"Left Shift", "Right Shift", "Left Ctrl", "Right Ctrl", "Left Alt", "Right Alt", "Left Cmd", "Right Cmd"}
         other_mods = (self.held_tokens & mod_tokens) - {token}
         if other_mods:
@@ -360,7 +354,6 @@ class KeyCaptureButton(QPushButton):
         self.setFocus()
 
     def detect_exact_modifier_vk(self, qt_key, event):
-        """Detects exact Left or Right Ctrl/Alt/Shift across Windows, macOS, and Linux."""
         if IS_WIN:
             u32 = ctypes.windll.user32
             if qt_key == Qt.Key.Key_Control:
@@ -376,7 +369,6 @@ class KeyCaptureButton(QPushButton):
                     return 0xA1, "Right Shift"
                 return 0xA0, "Left Shift"
         else:
-            # macOS / Linux native scan codes / virtual keys
             sc = event.nativeScanCode()
             vk = event.nativeVirtualKey()
             if qt_key == Qt.Key.Key_Control:
@@ -453,7 +445,7 @@ class SettingsDialog(QDialog):
         self.w = parent_widget
         self.setWindowTitle("Настройки")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
-        self.setFixedSize(350, 320)
+        self.setFixedSize(370, 385)
         self.setStyleSheet(f"""
             QDialog {{
                 background-color: #18181B;
@@ -469,11 +461,20 @@ class SettingsDialog(QDialog):
                 font-size: 12px;
                 spacing: 8px;
             }}
+            QLineEdit {{
+                background-color: #27272A;
+                color: #FAFAFA;
+                border: 1px solid #3F3F46;
+                border-radius: 6px;
+                padding: 5px 8px;
+                font-size: 12px;
+                font-weight: 600;
+            }}
         """)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 18, 18)
-        layout.setSpacing(12)
+        layout.setSpacing(11)
 
         title = QLabel("Горячие клавиши")
         title.setStyleSheet("font-size: 14px; font-weight: 600; color: #FAFAFA;")
@@ -502,6 +503,13 @@ class SettingsDialog(QDialog):
         self.global_cb = QCheckBox("Работать поверх любых окон (в браузере и играх)")
         self.global_cb.setChecked(self.w.global_hotkeys)
         layout.addWidget(self.global_cb)
+
+        presets_lbl = QLabel("Пресеты большого режима (мин, через запятую):")
+        presets_lbl.setStyleSheet("font-size: 12px; color: #A1A1AA; margin-top: 4px;")
+        layout.addWidget(presets_lbl)
+
+        self.presets_edit = QLineEdit(", ".join(str(m) for m in self.w.presets))
+        layout.addWidget(self.presets_edit)
 
         op_row = QHBoxLayout()
         op_lbl = QLabel("Прозрачность:")
@@ -541,6 +549,17 @@ class SettingsDialog(QDialog):
         for k, btn in self.buttons.items():
             self.w.hotkeys[k] = {"vk": btn.vk_code, "name": btn.key_name}
         self.w.global_hotkeys = self.global_cb.isChecked()
+
+        raw_presets = self.presets_edit.text().replace(";", ",").split(",")
+        parsed = []
+        for item in raw_presets:
+            item = item.strip()
+            if item.isdigit():
+                val = max(1, min(999, int(item)))
+                parsed.append(val)
+        if parsed:
+            self.w.presets = parsed[:6]
+
         self.w.save_config()
         self.accept()
 
@@ -599,8 +618,8 @@ class JellyTimerWidget(QWidget):
         self.theme_key = "graphite"
         self.bg_opacity = 0.88
         self.snap_enabled = True
-        # Enabled by default so hotkeys work immediately even when browser tab is focused!
         self.global_hotkeys = True
+        self.presets = [5, 15, 25, 45, 60]
 
         self.hotkeys = {
             "play_pause":  {"vk": 0x20, "name": "Space"},
@@ -653,7 +672,6 @@ class JellyTimerWidget(QWidget):
         self.interactive_rects = {}
         self.topmost_counter = 0
 
-        # Cross-platform background hotkey listener (macOS / Linux via pynput, Windows via Win32)
         self.hk_monitor = CrossPlatformHotkeyMonitor(self)
         self.hk_monitor.hotkey_triggered.connect(self.execute_hotkey_action)
 
@@ -673,11 +691,12 @@ class JellyTimerWidget(QWidget):
                 self.theme_key = data.get("theme_key", self.theme_key)
                 self.bg_opacity = float(data.get("bg_opacity", self.bg_opacity))
                 self.snap_enabled = bool(data.get("snap_enabled", self.snap_enabled))
-                # Migrate to True unless explicitly disabled in new config version
                 if "global_hotkeys_v2" in data:
                     self.global_hotkeys = bool(data["global_hotkeys_v2"])
                 else:
                     self.global_hotkeys = True
+                if isinstance(data.get("presets"), list) and data["presets"]:
+                    self.presets = [int(x) for x in data["presets"] if int(x) > 0][:6]
                 self.timer_total = float(data.get("timer_total", self.timer_total))
                 self.timer_remaining = self.timer_total
                 if "hotkeys" in data:
@@ -701,6 +720,7 @@ class JellyTimerWidget(QWidget):
                 "bg_opacity": self.bg_opacity,
                 "snap_enabled": self.snap_enabled,
                 "global_hotkeys_v2": self.global_hotkeys,
+                "presets": self.presets,
                 "hotkeys": self.hotkeys,
                 "timer_total": self.timer_total,
                 "x": self.sp_x.target,
@@ -711,8 +731,16 @@ class JellyTimerWidget(QWidget):
         except Exception:
             pass
 
+    def is_reset_available(self) -> bool:
+        """Reset button is only shown when the clock is actively running or has progressed away from initial state."""
+        if self.is_running:
+            return True
+        if self.mode == "timer":
+            return abs(self.timer_remaining - self.timer_total) > 0.05
+        else:
+            return self.stopwatch_elapsed > 0.05
+
     def enforce_topmost_crossplatform(self):
-        """Keeps widget above fullscreen/active browsers across Windows, macOS, and Linux."""
         if IS_WIN:
             try:
                 hwnd = int(self.winId())
@@ -723,7 +751,6 @@ class JellyTimerWidget(QWidget):
             except Exception:
                 pass
         else:
-            # On macOS / Linux X11/Wayland, raise_() on a WindowStaysOnTopHint Tool window keeps it elevated
             self.raise_()
 
     def trigger_jelly(self, vx=0.0, vy=0.0):
@@ -774,11 +801,7 @@ class JellyTimerWidget(QWidget):
             ty = sg.bottom() - h - margin
             v_edge = "bottom"
 
-        if v_edge and h_edge:
-            edge = f"{v_edge}_{h_edge}"
-        else:
-            edge = h_edge or v_edge
-
+        edge = f"{v_edge}_{h_edge}" if (v_edge and h_edge) else (h_edge or v_edge)
         return edge, QRectF(tx, ty, w, h)
 
     def get_docked_target_pos(self, edge, cur_x, cur_y, old_w, old_h, new_w, new_h):
@@ -988,7 +1011,6 @@ class JellyTimerWidget(QWidget):
                 elif len(parts) >= 3:
                     total = float(parts[0] * 3600 + parts[1] * 60 + parts[2])
             else:
-                # Plain number = minutes (e.g. "25" -> 25:00)
                 total = float(int(raw) * 60)
         except Exception:
             total = 0.0
@@ -1078,7 +1100,6 @@ class JellyTimerWidget(QWidget):
         painter.drawText(rect, align, text_str)
 
         if show_caret:
-            # Draw blinking text cursor at self.edit_cursor position
             if int(time.perf_counter() * 2.2) % 2 == 0:
                 total_w = fm.horizontalAdvance(text_str)
                 start_x = rect.center().x() - total_w / 2.0
@@ -1259,7 +1280,6 @@ class JellyTimerWidget(QWidget):
         painter.restore()
 
     def draw_time_box(self, painter: QPainter, rect: QRectF, max_pt: int, theme: dict, align=Qt.AlignmentFlag.AlignCenter):
-        # Store time display rect separately so single-click on it still drags the window!
         self.time_display_rect = QRectF(rect)
 
         val = self.timer_remaining if self.mode == "timer" else self.stopwatch_elapsed
@@ -1300,21 +1320,18 @@ class JellyTimerWidget(QWidget):
         self.draw_icon_btn(painter, "close", QRectF(w - 29, 10, 22, 22), "close", theme)
 
         clock_rect = QRectF(12, 34, w - 24, 56)
-        self.draw_time_box(painter, clock_rect, 31, theme, align=Qt.AlignmentFlag.AlignCenter)
+        self.draw_time_box(painter, clock_rect, 32, theme, align=Qt.AlignmentFlag.AlignCenter)
 
+        # Clean Medium bottom bar: only Start/Pause, plus Reset ONLY when active/progressed
         y_btn = h - 38
         play_lbl = "Пауза" if self.is_running else "Старт"
         play_ic = "pause" if self.is_running else "play"
 
-        if self.mode == "timer":
-            self.draw_text_btn(painter, "sub_1m", QRectF(10, y_btn, 40, 26), "-1м", theme, font_size=8)
-            self.draw_text_btn(painter, "play", QRectF(55, y_btn, 88, 26), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
-            self.draw_icon_btn(painter, "reset", QRectF(148, y_btn, 32, 26), "reset", theme)
-            self.draw_text_btn(painter, "add_1m", QRectF(185, y_btn, 42, 26), "+1м", theme, font_size=8)
-            self.draw_text_btn(painter, "add_5m", QRectF(232, y_btn, 42, 26), "+5м", theme, font_size=8)
+        if self.is_reset_available():
+            self.draw_text_btn(painter, "play", QRectF(w / 2 - 70, y_btn, 100, 26), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
+            self.draw_icon_btn(painter, "reset", QRectF(w / 2 + 36, y_btn, 34, 26), "reset", theme)
         else:
-            self.draw_text_btn(painter, "play", QRectF(w / 2 - 64, y_btn, 88, 26), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
-            self.draw_icon_btn(painter, "reset", QRectF(w / 2 + 30, y_btn, 34, 26), "reset", theme)
+            self.draw_text_btn(painter, "play", QRectF(w / 2 - 56, y_btn, 112, 26), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
 
     def draw_large_layout(self, painter, w, h, theme):
         pill_w = 94 if self.mode == "timer" else 118
@@ -1328,26 +1345,35 @@ class JellyTimerWidget(QWidget):
         clock_rect = QRectF(14, 42, w - 28, 64)
         self.draw_time_box(painter, clock_rect, 40, theme, align=Qt.AlignmentFlag.AlignCenter)
 
-        if self.mode == "timer":
+        if self.mode == "timer" and self.presets:
             y_p = 112
-            presets = [("5м", 5), ("15м", 15), ("25м", 25), ("45м", 45), ("60м", 60)]
-            pw = (w - 24 - (len(presets) - 1) * 6) / len(presets)
-            for i, (lbl, mins) in enumerate(presets):
+            n = len(self.presets)
+            pw = (w - 24 - (n - 1) * 6) / n
+            for i, mins in enumerate(self.presets):
                 px = 12 + i * (pw + 6)
-                self.draw_text_btn(painter, f"preset_{mins}", QRectF(px, y_p, pw, 24), lbl, theme, font_size=8)
+                self.draw_text_btn(painter, f"preset_{mins}", QRectF(px, y_p, pw, 24), f"{mins}м", theme, font_size=8)
 
         y_btn = h - 42
         play_lbl = "Пауза" if self.is_running else "Старт"
         play_ic = "pause" if self.is_running else "play"
+        show_reset = self.is_reset_available()
 
         if self.mode == "timer":
-            self.draw_text_btn(painter, "sub_1m", QRectF(12, y_btn, 52, 28), "-1 мин", theme, font_size=8)
-            self.draw_text_btn(painter, "play", QRectF(72, y_btn, 124, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
-            self.draw_icon_btn(painter, "reset", QRectF(204, y_btn, 42, 28), "reset", theme)
-            self.draw_text_btn(painter, "add_1m", QRectF(254, y_btn, 82, 28), "+1 мин", theme, font_size=8)
+            self.draw_text_btn(painter, "sub_5m", QRectF(12, y_btn, 38, 28), "-5м", theme, font_size=8)
+            self.draw_text_btn(painter, "sub_1m", QRectF(54, y_btn, 38, 28), "-1м", theme, font_size=8)
+            if show_reset:
+                self.draw_text_btn(painter, "play", QRectF(98, y_btn, 108, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
+                self.draw_icon_btn(painter, "reset", QRectF(212, y_btn, 36, 28), "reset", theme)
+            else:
+                self.draw_text_btn(painter, "play", QRectF(98, y_btn, 150, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
+            self.draw_text_btn(painter, "add_1m", QRectF(254, y_btn, 38, 28), "+1м", theme, font_size=8)
+            self.draw_text_btn(painter, "add_5m", QRectF(296, y_btn, 40, 28), "+5м", theme, font_size=8)
         else:
-            self.draw_text_btn(painter, "play", QRectF(w / 2 - 74, y_btn, 104, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
-            self.draw_icon_btn(painter, "reset", QRectF(w / 2 + 38, y_btn, 38, 28), "reset", theme)
+            if show_reset:
+                self.draw_text_btn(painter, "play", QRectF(w / 2 - 74, y_btn, 104, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
+                self.draw_icon_btn(painter, "reset", QRectF(w / 2 + 36, y_btn, 38, 28), "reset", theme)
+            else:
+                self.draw_text_btn(painter, "play", QRectF(w / 2 - 60, y_btn, 120, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
 
     def card_pos_from_event(self, event):
         pos = event.position()
@@ -1477,7 +1503,6 @@ class JellyTimerWidget(QWidget):
             if hit:
                 self.handle_button_click(hit)
                 return
-            # Double-clicking the timer digits opens text editing mode!
             if self.mode == "timer" and self.time_display_rect.contains(card_pt):
                 self.dragging = False
                 self.start_time_edit()
@@ -1529,6 +1554,8 @@ class JellyTimerWidget(QWidget):
             self.adjust_timer(300)
         elif key == "sub_1m":
             self.adjust_timer(-60)
+        elif key == "sub_5m":
+            self.adjust_timer(-300)
         elif key.startswith("preset_"):
             mins = int(key.split("_")[1])
             self.is_running = False
@@ -1575,7 +1602,7 @@ class JellyTimerWidget(QWidget):
             act_edit = None
         menu.addSeparator()
 
-        act_keys = menu.addAction("Горячие клавиши и прозрачность...")
+        act_keys = menu.addAction("Настройки (Клавиши, пресеты, прозрачность)...")
         act_global_hk = menu.addAction("Глобальные клавиши (в браузере/играх)" + (" ✓" if self.global_hotkeys else ""))
         menu.addSeparator()
 
