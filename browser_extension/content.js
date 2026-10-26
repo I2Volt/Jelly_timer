@@ -643,21 +643,87 @@
     }
   }
 
-  // Writer-friendly hotkeys on page (Right Ctrl = Play/Pause, Right Alt = Reset)
+  let summonedFocus = false;
+  let alarmFlash = 0.0;
+  let prevLiveSec = 25 * 60;
+
+  function playWebAlarm() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const notes = [
+        [783.99, 0.0, 0.14], [987.77, 0.15, 0.14], [1174.66, 0.30, 0.28],
+        [783.99, 0.68, 0.14], [987.77, 0.83, 0.14], [1174.66, 0.98, 0.28],
+        [783.99, 1.36, 0.14], [987.77, 1.51, 0.14], [1567.98, 1.66, 0.42]
+      ];
+      notes.forEach(([freq, startOffset, dur]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        const t0 = ctx.currentTime + startOffset;
+        gain.gain.setValueAtTime(0.001, t0);
+        gain.gain.linearRampToValueAtTime(0.35, t0 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + dur + 0.02);
+      });
+    } catch (e) {}
+  }
+
+  // Summon hotkey (Right Ctrl) & exclusive key capture when summoned
   window.addEventListener("keydown", (e) => {
     if (editingTime) return;
-    if (e.code === state.hotkeys.play_pause && !e.repeat) {
-      sendMsg({ type: "TOGGLE_PLAY" });
-    } else if (e.code === state.hotkeys.reset && !e.repeat) {
-      sendMsg({ type: "RESET" });
+    if (e.code === "ControlRight" && !e.repeat) {
+      summonedFocus = !summonedFocus;
+      alarmFlash = 0;
+      spScaleX.velocity += summonedFocus ? 1.4 : -1.1;
+      spScaleY.velocity += summonedFocus ? -1.4 : 1.1;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return;
     }
-  });
+    if (!summonedFocus) return;
+
+    // Block all plain keys from reaching the open webpage while timer is summoned!
+    if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    if (e.repeat) return;
+    if (e.code === "Escape") {
+      summonedFocus = false;
+    } else if (e.code === "Space") {
+      alarmFlash = 0;
+      sendMsg({ type: "TOGGLE_PLAY" });
+    } else if (e.code === "KeyR") {
+      alarmFlash = 0;
+      sendMsg({ type: "RESET" });
+    } else if (e.code === "KeyM") {
+      sendMsg({ type: "SWITCH_MODE" });
+    } else if (e.code === "KeyS") {
+      cycleSize();
+    }
+  }, true);
+
+  window.addEventListener("mousedown", (e) => {
+    if (summonedFocus && e.target !== host) {
+      summonedFocus = false;
+    }
+  }, true);
 
   // Load initial state & subscribe to cross-tab storage changes
   chrome.storage.local.get(["jellyState"], (res) => {
     if (res.jellyState) {
       state = { ...state, ...res.jellyState };
     }
+    prevLiveSec = getLiveSeconds();
     applyDockedPositionFromState(true);
     rebuildDOM();
   });
@@ -677,6 +743,33 @@
   function tick(now) {
     const dt = (now - lastFrame) / 1000.0;
     lastFrame = now;
+
+    const curSec = getLiveSeconds();
+    if (state.mode === "timer" && prevLiveSec > 0 && curSec <= 0) {
+      alarmFlash = 6.0;
+      spScaleX.velocity += 2.2;
+      spScaleY.velocity -= 2.2;
+      playWebAlarm();
+    }
+    prevLiveSec = curSec;
+
+    if (alarmFlash > 0) {
+      alarmFlash = Math.max(0, alarmFlash - dt);
+      const pulse = Math.sin(alarmFlash * 14.0) * 0.5 + 0.5;
+      const th = THEMES[state.themeKey] || THEMES.graphite;
+      const [br, bg, bb] = th.bg.split(",").map((v) => parseInt(v.trim(), 10));
+      const mix = pulse * 0.88;
+      const r = Math.round(br * (1 - mix) + 225 * mix);
+      const g = Math.round(bg * (1 - mix) + 24 * mix);
+      const b = Math.round(bb * (1 - mix) + 34 * mix);
+      const a = Math.max(state.opacity, 0.96 * pulse);
+      cardEl.style.background = `rgba(${r}, ${g}, ${b}, ${a})`;
+      cardEl.style.border = `2.2px solid rgba(255, 95, 95, ${0.75 + 0.25 * pulse})`;
+    } else {
+      const th = THEMES[state.themeKey] || THEMES.graphite;
+      cardEl.style.background = `rgba(${th.bg}, ${state.opacity})`;
+      cardEl.style.border = summonedFocus ? "1.8px solid rgba(244, 244, 245, 0.95)" : `1px solid ${th.border}`;
+    }
 
     spX.step(dt);
     spY.step(dt);

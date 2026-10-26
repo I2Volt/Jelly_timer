@@ -2,9 +2,14 @@ import sys
 import math
 import json
 import os
+import io
+import wave
+import struct
 import time
 import platform
 import subprocess
+import threading
+import tempfile
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QMenu, QDialog, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QSlider, QCheckBox, QLineEdit
@@ -15,16 +20,18 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtSvg import QSvgRenderer
 
-try:
-    from pynput import keyboard as pynput_kb
-    HAS_PYNPUT = True
-except Exception:
-    HAS_PYNPUT = False
-
 OS_NAME = platform.system()  # "Windows", "Darwin" (macOS), "Linux"
 IS_WIN = (OS_NAME == "Windows")
 IS_MAC = (OS_NAME == "Darwin")
 IS_LINUX = (OS_NAME == "Linux")
+
+try:
+    if IS_WIN:
+        import pynput.keyboard._win32  # Explicit import for PyInstaller
+    from pynput import keyboard as pynput_kb
+    HAS_PYNPUT = True
+except Exception:
+    HAS_PYNPUT = False
 
 if IS_WIN:
     import ctypes
@@ -39,32 +46,76 @@ UI_FONT = "SF Pro Display" if IS_MAC else ("Ubuntu" if IS_LINUX else "Segoe UI")
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 
+_ALARM_WAV_CACHE = None
+
+
+def _build_alarm_wav_bytes() -> bytes:
+    """Synthesizes a clear, loud 44.1 kHz 16-bit PCM WAV triple-chime in memory."""
+    global _ALARM_WAV_CACHE
+    if _ALARM_WAV_CACHE is not None:
+        return _ALARM_WAV_CACHE
+
+    sr = 44100
+    buf = io.BytesIO()
+    notes = [
+        (783.99, 0.14), (987.77, 0.14), (1174.66, 0.28), (0.0, 0.10),
+        (783.99, 0.14), (987.77, 0.14), (1174.66, 0.28), (0.0, 0.10),
+        (783.99, 0.14), (987.77, 0.14), (1567.98, 0.42),
+    ]
+    samples = []
+    for freq, dur in notes:
+        n = int(sr * dur)
+        for i in range(n):
+            if freq <= 0.0:
+                samples.append(0)
+            else:
+                t = i / sr
+                attack = min(1.0, i / (sr * 0.008))
+                decay = math.exp(-3.0 * t / dur)
+                env = attack * decay
+                val = (
+                    0.65 * math.sin(2.0 * math.pi * freq * t)
+                    + 0.25 * math.sin(2.0 * math.pi * (freq * 2.0) * t)
+                    + 0.10 * math.sin(2.0 * math.pi * (freq * 3.0) * t)
+                )
+                s = int(max(-32767, min(32767, val * env * 30000)))
+                samples.append(s)
+
+    with wave.open(buf, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sr)
+        wf.writeframes(struct.pack("<" + "h" * len(samples), *samples))
+
+    _ALARM_WAV_CACHE = buf.getvalue()
+    return _ALARM_WAV_CACHE
+
 
 def play_system_alarm():
-    """Cross-platform non-blocking alarm sound for Windows, macOS, and Linux."""
-    if IS_WIN:
+    """Plays synthesized WAV alarm through primary audio output on Windows, macOS, and Linux."""
+    def _worker():
         try:
-            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS | winsound.SND_ASYNC)
-            return
-        except Exception:
-            pass
-    elif IS_MAC:
-        try:
-            subprocess.Popen(["afplay", "/System/Library/Sounds/Glass.aiff"])
-            return
-        except Exception:
-            pass
-    elif IS_LINUX:
-        for cmd in (
-            ["paplay", "/usr/share/sounds/freedesktop/stereo/complete.oga"],
-            ["aplay", "/usr/share/sounds/alsa/Front_Center.wav"],
-        ):
-            try:
-                subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            wav_bytes = _build_alarm_wav_bytes()
+            if IS_WIN:
+                winsound.PlaySound(wav_bytes, winsound.SND_MEMORY)
                 return
-            except Exception:
-                pass
-    QApplication.beep()
+            wav_path = os.path.join(tempfile.gettempdir(), "jelly_timer_alarm.wav")
+            if not os.path.exists(wav_path):
+                with open(wav_path, "wb") as f:
+                    f.write(wav_bytes)
+            if IS_MAC:
+                subprocess.Popen(["afplay", wav_path], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                return
+            elif IS_LINUX:
+                for cmd in (["paplay", wav_path], ["aplay", wav_path]):
+                    try:
+                        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                        return
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+    threading.Thread(target=_worker, daemon=True).start()
 
 
 LUCIDE_SVGS = {
@@ -100,25 +151,150 @@ def render_svg_icon(painter: QPainter, name: str, rect: QRectF, color: QColor):
 
 
 class CrossPlatformHotkeyMonitor(QObject):
-    """Universal background hotkey listener supporting Windows, macOS, and Linux."""
+    """Universal background hotkey listener with OS-level key suppression when summoned."""
     hotkey_triggered = pyqtSignal(str)
+
+    MOD_VKS = {0xA0, 0xA1, 0x10, 0xA2, 0xA3, 0x11, 0xA4, 0xA5, 0x12, 0x5B, 0x5C}
+    MOD_GROUPS = (
+        {0xA0, 0xA1, 0x10},
+        {0xA2, 0xA3, 0x11},
+        {0xA4, 0xA5, 0x12},
+        {0x5B, 0x5C},
+    )
 
     def __init__(self, widget):
         super().__init__(widget)
         self.w = widget
         self.held_tokens = set()
+        self.held_vks = set()
+        self.suppressed_vks = set()
+        self._suppress_mac_event = False
         self.listener = None
 
-        if not IS_WIN and HAS_PYNPUT:
+        if HAS_PYNPUT:
             try:
-                self.listener = pynput_kb.Listener(
-                    on_press=self._on_pynput_press,
-                    on_release=self._on_pynput_release
-                )
+                if IS_WIN:
+                    self.listener = pynput_kb.Listener(
+                        win32_event_filter=self._win32_event_filter
+                    )
+                elif IS_MAC:
+                    self.listener = pynput_kb.Listener(
+                        on_press=self._on_pynput_press,
+                        on_release=self._on_pynput_release,
+                        darwin_intercept=self._darwin_intercept
+                    )
+                else:
+                    self.listener = pynput_kb.Listener(
+                        on_press=self._on_pynput_press,
+                        on_release=self._on_pynput_release
+                    )
                 self.listener.daemon = True
                 self.listener.start()
             except Exception:
                 self.listener = None
+
+    def _has_other_win_modifier(self, allowed_vk: int) -> bool:
+        for grp in self.MOD_GROUPS:
+            if allowed_vk in grp:
+                continue
+            if self.held_vks & grp:
+                return True
+        return False
+
+    def _suppress_win_vk(self, vk: int, is_press: bool):
+        if is_press:
+            self.suppressed_vks.add(vk)
+        else:
+            self.suppressed_vks.discard(vk)
+        if self.listener is not None:
+            self.listener.suppress_event()
+
+    def _win32_event_filter(self, msg, data):
+        # Ignore injected events
+        if getattr(data, "flags", 0) & 0x10:
+            return True
+
+        if getattr(self.w, "settings_open", False) or self.w.editing_time:
+            self.held_vks.clear()
+            self.suppressed_vks.clear()
+            return True
+
+        vk = int(data.vkCode)
+        is_press = msg in (0x0100, 0x0104)    # WM_KEYDOWN, WM_SYSKEYDOWN
+        is_release = msg in (0x0101, 0x0105)  # WM_KEYUP, WM_SYSKEYUP
+        if not (is_press or is_release):
+            return True
+
+        if is_press:
+            first_press = (vk not in self.held_vks)
+            self.held_vks.add(vk)
+        else:
+            first_press = False
+            self.held_vks.discard(vk)
+            if vk in self.suppressed_vks:
+                self._suppress_win_vk(vk, False)
+                return False
+
+        has_other_mod = self._has_other_win_modifier(vk)
+
+        # 1. Check Summon hotkey globally
+        summon_vk = self.w.hotkeys.get("summon", {}).get("vk", 0)
+        if summon_vk and vk == summon_vk and not has_other_mod:
+            if is_press and first_press:
+                self.hotkey_triggered.emit("summon")
+            if vk not in self.MOD_VKS:
+                self._suppress_win_vk(vk, is_press)
+            return False
+
+        # If another standalone modifier (e.g. Right Shift for PRO) is pressed while summoned, yield focus cleanly
+        if self.w.summoned_focus and vk in self.MOD_VKS and vk != summon_vk and is_press and first_press:
+            self.hotkey_triggered.emit("unsummon")
+            return False
+
+        # 2. When Timer is Summoned: intercept and BLOCK keys from reaching the open desktop tab!
+        if self.w.summoned_focus:
+            if vk == 0x1B:  # Esc
+                if is_press and first_press:
+                    self.hotkey_triggered.emit("unsummon")
+                self._suppress_win_vk(vk, is_press)
+                return False
+
+            for action_key, hk in self.w.hotkeys.items():
+                if action_key == "summon":
+                    continue
+                hk_vk = hk.get("vk", 0)
+                if hk_vk and vk == hk_vk and not has_other_mod:
+                    if is_press and first_press:
+                        self.hotkey_triggered.emit(action_key)
+                    if vk not in self.MOD_VKS:
+                        self._suppress_win_vk(vk, is_press)
+                    return False
+
+            # Suppress any other plain key while summoned so the background window never reacts
+            if vk not in self.MOD_VKS and not has_other_mod:
+                self._suppress_win_vk(vk, is_press)
+            return False
+
+        # 3. Optional "always listen to all keys" mode
+        if self.w.global_hotkeys:
+            for action_key, hk in self.w.hotkeys.items():
+                if action_key == "summon":
+                    continue
+                hk_vk = hk.get("vk", 0)
+                if hk_vk and vk == hk_vk and not has_other_mod:
+                    if is_press and first_press:
+                        self.hotkey_triggered.emit(action_key)
+                    if vk not in self.MOD_VKS:
+                        self._suppress_win_vk(vk, is_press)
+                    return False
+
+        return False
+
+    def _darwin_intercept(self, event_type, event):
+        if self._suppress_mac_event:
+            self._suppress_mac_event = False
+            return None
+        return event
 
     def _normalize_pynput_key(self, key):
         try:
@@ -154,11 +330,12 @@ class CrossPlatformHotkeyMonitor(QObject):
         return None
 
     def _on_pynput_press(self, key):
-        if self.w.editing_time:
+        if getattr(self.w, "settings_open", False) or self.w.editing_time:
             return
         token = self._normalize_pynput_key(key)
-        if not token or token in self.held_tokens:
+        if not token:
             return
+        first_press = (token not in self.held_tokens)
         self.held_tokens.add(token)
 
         mod_tokens = {"Left Shift", "Right Shift", "Left Ctrl", "Right Ctrl", "Left Alt", "Right Alt", "Left Cmd", "Right Cmd"}
@@ -166,21 +343,43 @@ class CrossPlatformHotkeyMonitor(QObject):
         if other_mods:
             return
 
-        # Summon hotkey always works globally
         summon_hk = self.w.hotkeys.get("summon", {})
         if summon_hk.get("name", "").upper() == token.upper():
-            self.hotkey_triggered.emit("summon")
+            if first_press:
+                self.hotkey_triggered.emit("summon")
+            if token not in mod_tokens:
+                self._suppress_mac_event = True
             return
 
-        active_ok = self.w.global_hotkeys or self.w.summoned_focus or self.w.underMouse() or self.w.isActiveWindow()
-        if not active_ok:
+        if self.w.summoned_focus:
+            if token == "Esc":
+                if first_press:
+                    self.hotkey_triggered.emit("unsummon")
+                self._suppress_mac_event = True
+                return
+            for action_key, hk in self.w.hotkeys.items():
+                if action_key == "summon":
+                    continue
+                if hk.get("name", "").upper() == token.upper():
+                    if first_press:
+                        self.hotkey_triggered.emit(action_key)
+                    if token not in mod_tokens:
+                        self._suppress_mac_event = True
+                    return
+            if token not in mod_tokens:
+                self._suppress_mac_event = True
             return
 
-        for action_key, hk in self.w.hotkeys.items():
-            if action_key == "summon":
-                continue
-            if hk.get("name", "").upper() == token.upper():
-                self.hotkey_triggered.emit(action_key)
+        if self.w.global_hotkeys:
+            for action_key, hk in self.w.hotkeys.items():
+                if action_key == "summon":
+                    continue
+                if hk.get("name", "").upper() == token.upper():
+                    if first_press:
+                        self.hotkey_triggered.emit(action_key)
+                    if token not in mod_tokens:
+                        self._suppress_mac_event = True
+                    return
 
     def _on_pynput_release(self, key):
         token = self._normalize_pynput_key(key)
@@ -455,7 +654,7 @@ class SettingsDialog(QDialog):
         self.w = parent_widget
         self.setWindowTitle("Настройки")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
-        self.setFixedSize(390, 460)
+        self.setFixedSize(390, 490)
         self.setStyleSheet(f"""
             QDialog {{
                 background-color: #18181B;
@@ -531,6 +730,29 @@ class SettingsDialog(QDialog):
 
         self.presets_edit = QLineEdit(", ".join(str(m) for m in self.w.presets))
         layout.addWidget(self.presets_edit)
+
+        snd_row = QHBoxLayout()
+        snd_row.addWidget(QLabel("Звуковой сигнал:"))
+        snd_test_btn = QPushButton("Проверить звук")
+        snd_test_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        snd_test_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27272A;
+                color: #F4F4F5;
+                border: 1px solid #3F3F46;
+                border-radius: 6px;
+                padding: 4px 12px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #3F3F46;
+            }
+        """)
+        snd_test_btn.clicked.connect(play_system_alarm)
+        snd_row.addStretch()
+        snd_row.addWidget(snd_test_btn)
+        layout.addLayout(snd_row)
 
         op_row = QHBoxLayout()
         op_lbl = QLabel("Прозрачность:")
@@ -765,28 +987,16 @@ class JellyTimerWidget(QWidget):
         if self.summoned_focus:
             self.summoned_focus = False
             self.clearFocus()
-            if IS_WIN and self.prev_foreground_hwnd:
-                try:
-                    ctypes.windll.user32.SetForegroundWindow(self.prev_foreground_hwnd)
-                except Exception:
-                    pass
             self.trigger_jelly(vx=-1.1, vy=1.1)
         else:
-            if IS_WIN:
-                try:
-                    fg = ctypes.windll.user32.GetForegroundWindow()
-                    if fg and fg != int(self.winId()):
-                        self.prev_foreground_hwnd = fg
-                    ctypes.windll.user32.SetForegroundWindow(int(self.winId()))
-                except Exception:
-                    pass
             self.summoned_focus = True
-            self.activateWindow()
-            self.setFocus()
+            self.alarm_flash = 0.0
+            self.raise_()
             self.trigger_jelly(vx=1.4, vy=-1.4)
 
     def focusOutEvent(self, event):
-        self.summoned_focus = False
+        if not IS_WIN:
+            self.summoned_focus = False
         super().focusOutEvent(event)
 
     def enforce_topmost_crossplatform(self):
@@ -947,6 +1157,9 @@ class JellyTimerWidget(QWidget):
     def execute_hotkey_action(self, action_key):
         if action_key == "summon":
             self.toggle_summon_focus()
+        elif action_key == "unsummon":
+            if self.summoned_focus:
+                self.toggle_summon_focus()
         elif action_key == "play_pause":
             self.toggle_play()
         elif action_key == "reset":
@@ -967,7 +1180,18 @@ class JellyTimerWidget(QWidget):
             self.enforce_topmost_crossplatform()
 
         if IS_WIN:
-            self.poll_hotkeys_win32()
+            if not HAS_PYNPUT:
+                self.poll_hotkeys_win32()
+            elif self.summoned_focus:
+                # Clear summoned_focus immediately if the user clicks anywhere outside the timer widget
+                u32 = ctypes.windll.user32
+                mouse_down = (
+                    (u32.GetAsyncKeyState(0x01) & 0x8000) != 0
+                    or (u32.GetAsyncKeyState(0x02) & 0x8000) != 0
+                    or (u32.GetAsyncKeyState(0x04) & 0x8000) != 0
+                )
+                if mouse_down and not self.underMouse():
+                    self.summoned_focus = False
 
         if self.is_running:
             if self.mode == "timer":
@@ -975,7 +1199,8 @@ class JellyTimerWidget(QWidget):
                 if self.timer_remaining <= 0.0:
                     self.timer_remaining = 0.0
                     self.is_running = False
-                    self.alarm_flash = 4.0
+                    self.alarm_flash = 6.0
+                    self.trigger_jelly(vx=2.2, vy=-2.2)
                     play_system_alarm()
             else:
                 self.stopwatch_elapsed += real_dt
@@ -1286,25 +1511,27 @@ class JellyTimerWidget(QWidget):
         card_rect = QRectF(0, 0, w, h)
         radius = 14.0
 
-        flash = 0
-        if self.alarm_flash > 0:
-            flash = int((math.sin(self.alarm_flash * 12.0) * 0.5 + 0.5) * 45)
-
         alpha_bg = int(max(0.18, min(1.0, self.bg_opacity)) * 255)
-        bg_color = QColor(
-            min(255, bg_rgb[0] + flash),
-            min(255, bg_rgb[1] + flash // 2),
-            min(255, bg_rgb[2] + flash // 2),
-            alpha_bg
-        )
+        if self.alarm_flash > 0:
+            pulse = math.sin(self.alarm_flash * 14.0) * 0.5 + 0.5
+            mix = pulse * 0.88
+            r_col = int(bg_rgb[0] * (1.0 - mix) + 225 * mix)
+            g_col = int(bg_rgb[1] * (1.0 - mix) + 24 * mix)
+            b_col = int(bg_rgb[2] * (1.0 - mix) + 34 * mix)
+            alpha_bg = max(alpha_bg, int(248 * pulse))
+            bg_color = QColor(r_col, g_col, b_col, alpha_bg)
+        else:
+            bg_color = QColor(bg_rgb[0], bg_rgb[1], bg_rgb[2], alpha_bg)
 
         path = QPainterPath()
         path.addRoundedRect(card_rect, radius, radius)
         painter.fillPath(path, bg_color)
 
-        # Subtle silver-white border highlight when summoned via hotkey
-        if self.summoned_focus:
-            painter.setPen(QPen(QColor(244, 244, 245, 220), 1.5))
+        if self.alarm_flash > 0:
+            pulse = math.sin(self.alarm_flash * 14.0) * 0.5 + 0.5
+            painter.setPen(QPen(QColor(255, 95, 95, int(190 + 65 * pulse)), 2.2))
+        elif self.summoned_focus:
+            painter.setPen(QPen(QColor(244, 244, 245, 235), 1.8))
         else:
             painter.setPen(QPen(QColor(brd_rgb[0], brd_rgb[1], brd_rgb[2], 160), 1.0))
         painter.drawPath(path)
@@ -1610,8 +1837,13 @@ class JellyTimerWidget(QWidget):
         self.set_size_mode(order[idx])
 
     def open_settings_dialog(self):
-        dlg = SettingsDialog(self)
-        dlg.exec()
+        self.summoned_focus = False
+        self.settings_open = True
+        try:
+            dlg = SettingsDialog(self)
+            dlg.exec()
+        finally:
+            self.settings_open = False
 
     def handle_button_click(self, key):
         if key == "time_display":
