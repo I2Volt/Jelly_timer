@@ -2216,7 +2216,7 @@ def _ensure_single_instance(lock_name: str):
                 old_pid = int(f.read().strip())
             if old_pid != os.getpid():
                 if IS_WIN:
-                    subprocess.run(["taskkill", "/F", "/PID", str(old_pid)], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                    subprocess.run(["taskkill", "/F", "/PID", str(old_pid)], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, creationflags=0x08000000)
                 else:
                     import signal
                     os.kill(old_pid, signal.SIGTERM)
