@@ -21,6 +21,12 @@
       --dim: #71717a;
       --primary-bg: #f4f4f5;
       --primary-fg: #18181b;
+      --ocean-bright: #38bdf8;
+      --ocean-soft: #7dd3fc;
+      --ocean-btn: #0284c7;
+      --ocean-btn-hover: #0ea5e9;
+      --ocean-surface: rgba(12, 34, 54, 0.55);
+      --ocean-border: rgba(56, 189, 248, 0.36);
       --radius-card: 14px;
       --radius-btn: 7px;
     }
@@ -159,6 +165,19 @@
       background: #ffffff;
     }
 
+    .ui-btn.ocean-pro {
+      background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+      color: #f8fafc;
+      border: 1px solid rgba(125, 211, 252, 0.45);
+      box-shadow: inset 0 1px 0 rgba(224, 242, 254, 0.28), 0 6px 20px rgba(2, 132, 199, 0.24);
+    }
+
+    .ui-btn.ocean-pro:hover {
+      background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 100%);
+      color: #ffffff;
+      border-color: rgba(186, 230, 253, 0.7);
+    }
+
     /* Hero section */
     .hero-head {
       display: flex;
@@ -217,14 +236,32 @@
       position: absolute;
       inset: 34px 0 0 0;
       background-image:
+        radial-gradient(440px circle at 82% 42%, rgba(14, 116, 144, 0.16), transparent 72%),
         linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
-      background-size: 32px 32px;
+      background-size: 100% 100%, 32px 32px, 32px 32px;
       padding: 22px 26px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       pointer-events: none;
+    }
+
+    .jellyfish-deco {
+      position: absolute;
+      right: 112px;
+      bottom: 18px;
+      width: 116px;
+      height: 136px;
+      opacity: 0.22;
+      pointer-events: none;
+      filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.35));
+      animation: jellyFloat 5.5s ease-in-out infinite;
+    }
+
+    @keyframes jellyFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
     }
 
     .sandbox-doc-lines {
@@ -262,8 +299,9 @@
     .snap-preview {
       position: absolute;
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1.5px solid rgba(255, 255, 255, 0.45);
+      background: rgba(14, 165, 233, 0.11);
+      border: 1.5px solid rgba(56, 189, 248, 0.62);
+      box-shadow: 0 0 22px rgba(14, 165, 233, 0.18);
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.12s ease;
@@ -490,8 +528,15 @@
     }
 
     td.col-pro {
-      color: var(--text);
+      color: var(--ocean-soft);
       font-weight: 600;
+      background: rgba(14, 116, 144, 0.06);
+    }
+
+    th.th-pro-col {
+      color: var(--ocean-soft);
+      background: rgba(12, 34, 54, 0.45);
+      border-bottom: 1px solid var(--ocean-border);
     }
 
     /* Editions / Licensing Block */
@@ -513,8 +558,23 @@
     }
 
     .edition-card.pro-card {
-      border-color: #52525b;
-      background: #1a1a1f;
+      border: 1px solid var(--ocean-border);
+      background: linear-gradient(180deg, rgba(12, 34, 54, 0.42) 0%, #18181b 100%);
+      box-shadow: inset 0 1px 0 rgba(125, 211, 252, 0.18), 0 12px 32px rgba(2, 132, 199, 0.08);
+    }
+
+    .pro-ocean-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--ocean-soft);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
     }
 
     .ed-top {
@@ -624,7 +684,7 @@
         Built with a dark matte graphite surface, magnetic screen edges, elastic spring peel-off physics, and keyboard focus via Right Shift — so you never lose your typing cursor or active tab.
       </p>
       <div class="hero-actions">
-        <a class="ui-btn primary" id="heroProBtn" href="#editions" data-i18n="cta_pro">Get Jelly Timer Plus (PRO)</a>
+        <a class="ui-btn ocean-pro" id="heroProBtn" href="#editions" data-i18n="cta_pro">Get Jelly Timer Plus (PRO)</a>
         <a class="ui-btn" href="https://github.com/I2Volt/Jelly_timer/releases" target="_blank" rel="noopener" data-i18n="cta_free">Download Free Desktop / Extension</a>
       </div>
     </section>
@@ -633,7 +693,7 @@
     <section class="sandbox-frame" id="sandboxFrame">
       <div class="sandbox-bar">
         <span data-i18n="sandbox_title">Interactive Preview — Drag the timer away from the edge or press Right Shift</span>
-        <span id="sandboxStatus">Docked: Right Edge • 60 FPS Spring</span>
+        <span id="sandboxStatus" style="color:var(--ocean-soft);">Docked: Right Edge • 60 FPS Spring</span>
       </div>
       <div class="sandbox-grid">
         <div class="sandbox-doc-lines">
@@ -647,6 +707,17 @@
           Try: Drag widget to peel off edge • Double-click digits to edit • Press Right Shift + Space
         </div>
       </div>
+
+      <!-- Subtle Deep-Ocean Jellyfish-Clock Visual Emblem -->
+      <svg class="jellyfish-deco" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="60" cy="48" r="34" stroke="#38BDF8" stroke-width="4" />
+        <line x1="60" y1="48" x2="60" y2="27" stroke="#7DD3FC" stroke-width="4.5" stroke-linecap="round" />
+        <line x1="60" y1="48" x2="77" y2="57" stroke="#38BDF8" stroke-width="4" stroke-linecap="round" />
+        <circle cx="60" cy="48" r="4" fill="#BAE6FD" />
+        <path d="M43 81 C39 95, 47 107, 41 124" stroke="#38BDF8" stroke-width="3.2" stroke-linecap="round" />
+        <path d="M60 83 C56 99, 64 112, 59 131" stroke="#7DD3FC" stroke-width="3.4" stroke-linecap="round" />
+        <path d="M77 81 C73 95, 81 107, 75 124" stroke="#38BDF8" stroke-width="3.2" stroke-linecap="round" />
+      </svg>
 
       <div class="snap-preview" id="snapPreview"></div>
 
@@ -720,7 +791,7 @@
               <th data-i18n="th_cap">Capability</th>
               <th data-i18n="th_ext">Browser Extension</th>
               <th data-i18n="th_free">Desktop Free</th>
-              <th data-i18n="th_pro">Jelly Timer Plus (PRO)</th>
+              <th class="th-pro-col" data-i18n="th_pro">Jelly Timer Plus (PRO)</th>
             </tr>
           </thead>
           <tbody>
@@ -805,8 +876,11 @@
         <div class="edition-card pro-card">
           <div>
             <div class="ed-top">
-              <span class="ed-name">Jelly Timer Plus (PRO)</span>
-              <span class="ed-price">$9 <span style="font-size:11.5px;color:var(--muted);font-weight:400;">/ lifetime</span></span>
+              <span class="ed-name" style="display:inline-flex;align-items:center;gap:8px;">
+                <span>Jelly Timer Plus</span>
+                <span class="pro-ocean-badge">PRO</span>
+              </span>
+              <span class="ed-price" style="color:var(--ocean-soft);">$9 <span style="font-size:11.5px;color:var(--muted);font-weight:400;">/ lifetime</span></span>
             </div>
             <ul class="ed-list">
               <li data-i18n="ed_pro_1">Standalone Desktop Plus builds for Windows &amp; macOS</li>
@@ -816,7 +890,7 @@
               <li data-i18n="ed_pro_5">528 Hz Zen &amp; Harmonic Chime audio + Obsidian &amp; Slate Titanium themes</li>
             </ul>
           </div>
-          <a class="ui-btn primary" id="buyProLink" href="https://github.com/I2Volt/Jelly_timer" target="_blank" rel="noopener" data-i18n="ed_pro_btn">
+          <a class="ui-btn ocean-pro" id="buyProLink" href="https://github.com/I2Volt/Jelly_timer" target="_blank" rel="noopener" data-i18n="ed_pro_btn">
             Get Jelly Timer Plus (PRO) →
           </a>
         </div>
