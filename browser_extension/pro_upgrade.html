@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jelly Timer Plus (PRO) — Десктопная версия для глубокого фокуса</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #18181b;
+      --border: #27272a;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --accent: #f4f4f5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.55;
+      padding: 48px 20px 64px;
+    }
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      color: #e4e4e7;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 17px;
+      max-width: 640px;
+      margin-bottom: 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .card p {
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+    .compare {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .compare h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #27272a;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .cta-box {
+      background: linear-gradient(180deg, #1f1f24 0%, #18181b 100%);
+      border: 1px solid #3f3f46;
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #fafafa;
+      color: #18181b;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      transition: transform 0.12s, background 0.12s;
+    }
+    .btn-primary:hover {
+      background: #ffffff;
+      transform: translateY(-1px);
+    }
+    .footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #71717a;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge" id="versionBadge">✨ Jelly Timer Plus (PRO) • v1.2.0</div>
+    <h1>Таймер поверх всех программ, Помодоро, Flowtime и аналитика фокуса</h1>
+    <p class="subtitle">
+      Браузерное расширение работает внутри вкладок, а десктопная версия <b>Jelly Timer Plus (PRO)</b> живёт поверх любых программ Windows и macOS — IDE, Figma, Notion, игр и документов.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <h3>🍅 Помодоро и Flowtime</h3>
+        <p>Автоматические циклы «25 мин фокуса / 5 мин отдыха» и режим свободного потока Flowtime (умный перерыв 1/5 от времени вашей работы без прерывания звонком).</p>
+      </div>
+      <div class="card">
+        <h3>⚡ Авто-фокус по активному окну</h3>
+        <p>Таймер сам запускает отсчёт, когда вы открываете рабочую программу (VS Code, Word, Figma, Docs), и ставится на паузу при отвлечении.</p>
+      </div>
+      <div class="card">
+        <h3>📊 Статистика за 7 дней и топ окон</h3>
+        <p>Наглядный график минут глубокого фокуса по дням и автоматический учёт программ, в которых вы реально работали.</p>
+      </div>
+      <div class="card">
+        <h3>🎵 Синтезатор звука (528 Гц Zen &amp; Chime)</h3>
+        <p>Выбор между классическим сигналом, мягким аккордом Chime и частотой 528 Гц, плюс эксклюзивные темы «Глубокий оникс» и «Холодный титан».</p>
+      </div>
+    </div>
+
+    <div class="compare">
+      <h2>Сравнение версий</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Возможность</th>
+            <th>Free / Расширение</th>
+            <th>Jelly Timer Plus (PRO)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Желейная физика отрыва и магнитные края</td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td>Удобные клавиши без отрыва от печати (Right Shift / Right Ctrl)</td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td>Работа поверх всех программ Windows / macOS вне браузера</td>
+            <td>Только десктоп Free</td>
+            <td>✓ (Автономный .exe / .app)</td>
+          </tr>
+          <tr>
+            <td>Режимы Помодоро и Flowtime (умный перерыв 1/5)</td>
+            <td>—</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td>Авто-старт и авто-пауза при открытии рабочих окон</td>
+            <td>—</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td>Статистика концентрации за 7 дней + трекер активных окон</td>
+            <td>—</td>
+            <td>✓</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cta-box">
+      <div>
+        <h3 style="font-size: 19px; margin-bottom: 4px;">Перейти на Jelly Timer Plus (PRO)</h3>
+        <p style="color: var(--muted); font-size: 14px;" id="ctaSubtext">
+          Узнайте подробности и скачайте актуальную сборку для Windows и macOS.
+        </p>
+      </div>
+      <a class="btn-primary" id="proExternalLink" href="https://github.com/I2Volt/Jelly_timer" target="_blank" rel="noopener noreferrer">
+        Открыть страницу Jelly Timer Plus →
+      </a>
+    </div>
+
+    <div class="footer">
+      <span id="buildInfoText">Версия пакета: v1.2.0 • Export #03 (2026-11-05)</span>
+      <span id="syncStatusText">Синхронизация обновлений активна</span>
+    </div>
+  </div>
+  <script src="pro_upgrade.js"></script>
+</body>
+</html>

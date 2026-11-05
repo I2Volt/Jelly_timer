@@ -43,6 +43,9 @@
     stopwatch: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>`,
     swap: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>`,
     expand: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></svg>`,
+    minus: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+    plus: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+    settings: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
     close: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
     opacity: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z" fill="currentColor"/></svg>`
   };
@@ -88,9 +91,12 @@
     stopwatchElapsed: 0,
     isRunning: false,
     lastTimestamp: null,
+    presets: [5, 15, 25, 45, 60],
+    globalHotkeys: false,
     hotkeys: {
-      play_pause: "ControlRight",
-      reset: "AltRight",
+      summon: "ShiftRight",
+      play_pause: "Space",
+      reset: "KeyR",
       switch_mode: "KeyM",
       cycle_size: "KeyS"
     }
@@ -198,6 +204,83 @@
       background: rgba(244,244,245,0.75);
       width: 100%;
     }
+    .ctx-menu {
+      position: fixed;
+      background: #18181B;
+      border: 1px solid #3F3F46;
+      border-radius: 10px;
+      padding: 6px;
+      min-width: 215px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+      z-index: 2147483647;
+      pointer-events: auto;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ctx-menu.open { display: flex; }
+    .ctx-item {
+      border: none;
+      background: transparent;
+      color: #F4F4F5;
+      font-size: 12px;
+      text-align: left;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ctx-item:hover { background: #27272A; color: #FFFFFF; }
+    .ctx-item.pro { color: #FAFAFA; font-weight: 600; background: rgba(255,255,255,0.05); }
+    .ctx-item.pro:hover { background: rgba(255,255,255,0.12); }
+    .ctx-sep { height: 1px; background: #27272A; margin: 3px 4px; }
+    .ctx-meta {
+      font-size: 10.5px;
+      color: #71717A;
+      padding: 4px 10px 2px;
+    }
+    .settings-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 390px;
+      background: #18181B;
+      border: 1px solid #3F3F46;
+      border-radius: 14px;
+      padding: 18px;
+      color: #F4F4F5;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.65);
+      z-index: 2147483647;
+      pointer-events: auto;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .settings-modal.open { display: flex; }
+    .st-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .st-input {
+      background: #27272A;
+      border: 1px solid #3F3F46;
+      border-radius: 6px;
+      color: #FAFAFA;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      width: 100%;
+      outline: none;
+    }
+    .st-hint {
+      background: #222226;
+      color: #D4D4D8;
+      font-size: 11px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      line-height: 1.4;
+    }
   `;
   shadow.appendChild(style);
 
@@ -208,6 +291,14 @@
   const cardEl = document.createElement("div");
   cardEl.className = "card";
   shadow.appendChild(cardEl);
+
+  const ctxMenuEl = document.createElement("div");
+  ctxMenuEl.className = "ctx-menu";
+  shadow.appendChild(ctxMenuEl);
+
+  const settingsModalEl = document.createElement("div");
+  settingsModalEl.className = "settings-modal";
+  shadow.appendChild(settingsModalEl);
 
   // Physics springs
   const spX = new Spring(window.innerWidth - 300, 360, 29);
@@ -364,9 +455,10 @@
         <div class="top-row">
           <button class="btn" data-act="toggle_mode" style="height:22px;">${modeIcon} <span>${modeLabel}</span> ${SVGS.swap}</button>
           <div style="display:flex;gap:4px;">
-            <button class="btn" data-act="opacity" style="width:22px;height:22px;padding:0;">${SVGS.opacity}</button>
-            <button class="btn" data-act="cycle_size" style="width:22px;height:22px;padding:0;">${SVGS.expand}</button>
-            <button class="btn" data-act="close" style="width:22px;height:22px;padding:0;">${SVGS.close}</button>
+            <button class="btn" data-act="open_settings" title="Настройки" style="width:22px;height:22px;padding:0;">${SVGS.settings}</button>
+            <button class="btn" data-act="shrink_size" title="Уменьшить" style="width:22px;height:22px;padding:0;">${SVGS.minus}</button>
+            <button class="btn" data-act="grow_size" title="Увеличить" style="width:22px;height:22px;padding:0;">${SVGS.plus}</button>
+            <button class="btn" data-act="close" title="Скрыть" style="width:22px;height:22px;padding:0;">${SVGS.close}</button>
           </div>
         </div>
         <div class="time-box" data-act="time_box" style="font-size:32px;margin:2px 0;"></div>
@@ -377,27 +469,22 @@
         ${state.mode === "timer" ? `<div class="progress-track"><div class="progress-fill"></div></div>` : ""}
       `;
     } else {
+      const presetList = (Array.isArray(state.presets) && state.presets.length) ? state.presets : [5, 15, 25, 45, 60];
+      const presetBtns = presetList.map((m) => `<button class="btn" data-act="preset_${m}" style="flex:1;height:24px;">${m}м</button>`).join("");
       cardEl.style.flexDirection = "column";
       cardEl.style.padding = "12px 12px 14px 12px";
       cardEl.innerHTML = `
         <div class="top-row">
           <button class="btn" data-act="toggle_mode" style="height:24px;">${modeIcon} <span>${modeLabel}</span> ${SVGS.swap}</button>
           <div style="display:flex;gap:4px;">
-            <button class="btn" data-act="opacity" style="width:24px;height:24px;padding:0;">${SVGS.opacity}</button>
-            <button class="btn" data-act="cycle_size" style="width:24px;height:24px;padding:0;">${SVGS.expand}</button>
-            <button class="btn" data-act="close" style="width:24px;height:24px;padding:0;">${SVGS.close}</button>
+            <button class="btn" data-act="open_settings" title="Настройки" style="width:24px;height:24px;padding:0;">${SVGS.settings}</button>
+            <button class="btn" data-act="shrink_size" title="Уменьшить" style="width:24px;height:24px;padding:0;">${SVGS.minus}</button>
+            <button class="btn" data-act="grow_size" title="Увеличить" style="width:24px;height:24px;padding:0;">${SVGS.plus}</button>
+            <button class="btn" data-act="close" title="Скрыть" style="width:24px;height:24px;padding:0;">${SVGS.close}</button>
           </div>
         </div>
         <div class="time-box" data-act="time_box" style="font-size:40px;margin:2px 0;"></div>
-        ${state.mode === "timer" ? `
-          <div class="preset-row">
-            <button class="btn" data-act="preset_5" style="flex:1;height:24px;">5м</button>
-            <button class="btn" data-act="preset_15" style="flex:1;height:24px;">15м</button>
-            <button class="btn" data-act="preset_25" style="flex:1;height:24px;">25м</button>
-            <button class="btn" data-act="preset_45" style="flex:1;height:24px;">45м</button>
-            <button class="btn" data-act="preset_60" style="flex:1;height:24px;">60м</button>
-          </div>
-        ` : ""}
+        ${state.mode === "timer" ? `<div class="preset-row">${presetBtns}</div>` : ""}
         <div class="bottom-row" style="justify-content:center;">
           ${state.mode === "timer" ? `
             <button class="btn" data-act="sub_5m" style="height:28px;">-5м</button>
@@ -476,6 +563,145 @@
       cycleSize();
     }
   });
+
+  // Mouse wheel: Ctrl + Wheel -> opacity (20%..100%), plain Wheel on paused timer -> +-1 min
+  cardEl.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const dir = e.deltaY < 0 ? 1 : -1;
+    if (e.ctrlKey) {
+      const nextOp = Math.max(0.2, Math.min(1.0, Math.round((state.opacity + dir * 0.05) * 100) / 100));
+      sendMsg({ type: "PATCH_STATE", patch: { opacity: nextOp } });
+    } else if (state.mode === "timer" && !state.isRunning) {
+      sendMsg({ type: "ADJUST_TIMER", delta: dir * 60 });
+    }
+  }, { passive: false });
+
+  function closeContextMenu() {
+    ctxMenuEl.classList.remove("open");
+  }
+
+  let settingsOpen = false;
+  function openSettingsModal() {
+    settingsOpen = true;
+    const ver = state.appVersion || "1.2.0";
+    const exp = String(state.exportBuild || 2).padStart(2, "0");
+    const presetStr = (Array.isArray(state.presets) && state.presets.length ? state.presets : [5, 15, 25, 45, 60]).join(", ");
+    const curSummon = (state.hotkeys && state.hotkeys.summon) || "ShiftRight";
+    settingsModalEl.innerHTML = `
+      <div class="st-row">
+        <strong style="font-size:14px;color:#FAFAFA;">Настройки • v${ver} (Exp #${exp})</strong>
+        <button class="btn" id="stCloseX" style="width:24px;height:24px;padding:0;">${SVGS.close}</button>
+      </div>
+      <div class="st-row">
+        <span>Вызвать / Выбрать таймер:</span>
+        <select id="stSummonKey" class="st-input" style="width:155px;">
+          <option value="ShiftRight" ${curSummon === "ShiftRight" ? "selected" : ""}>Right Shift</option>
+          <option value="ControlRight" ${curSummon === "ControlRight" ? "selected" : ""}>Right Ctrl</option>
+          <option value="AltRight" ${curSummon === "AltRight" ? "selected" : ""}>Right Alt</option>
+        </select>
+      </div>
+      <div class="st-hint">
+        Нажмите <b>Right Shift</b> или <b>Right Ctrl</b> — таймер подсветится белой рамкой и перехватит кнопки: <b>Space</b> (Старт/Пауза), <b>R</b> (Сброс), <b>M</b> (Режим), <b>S</b> (Размер), <b>Esc</b> (Выход).
+      </div>
+      <div>
+        <div style="color:#A1A1AA;margin-bottom:4px;">Пресеты большого режима (мин, через запятую):</div>
+        <input id="stPresets" class="st-input" type="text" value="${presetStr}" />
+      </div>
+      <div class="st-row">
+        <span>Прозрачность (${Math.round(state.opacity * 100)}%):</span>
+        <input id="stOpacity" type="range" min="20" max="100" value="${Math.round(state.opacity * 100)}" style="width:160px;" />
+      </div>
+      <div class="st-row">
+        <span>Звуковой сигнал:</span>
+        <button class="btn" id="stTestSound">Проверить звук</button>
+      </div>
+      <div class="st-row" style="margin-top:4px;">
+        <button class="btn" id="stOpenPro" style="border:1px solid #52525B;color:#FAFAFA;">✨ Версия Plus (PRO)</button>
+        <button class="btn primary" id="stSaveBtn" style="flex:1;height:30px;">Сохранить</button>
+      </div>
+    `;
+    settingsModalEl.classList.add("open");
+
+    settingsModalEl.querySelector("#stCloseX").onclick = () => {
+      settingsOpen = false;
+      settingsModalEl.classList.remove("open");
+    };
+    settingsModalEl.querySelector("#stTestSound").onclick = () => playWebAlarm();
+    settingsModalEl.querySelector("#stOpenPro").onclick = () => {
+      settingsOpen = false;
+      settingsModalEl.classList.remove("open");
+      sendMsg({ type: "OPEN_PRO_PAGE" });
+    };
+    settingsModalEl.querySelector("#stOpacity").oninput = (ev) => {
+      const val = parseInt(ev.target.value, 10) / 100.0;
+      sendMsg({ type: "PATCH_STATE", patch: { opacity: val } });
+    };
+    settingsModalEl.querySelector("#stSaveBtn").onclick = () => {
+      const raw = settingsModalEl.querySelector("#stPresets").value.replace(/;/g, ",").split(",");
+      const parsed = raw.map((x) => parseInt(x.trim(), 10)).filter((n) => !isNaN(n) && n > 0 && n <= 999).slice(0, 6);
+      const summonVal = settingsModalEl.querySelector("#stSummonKey").value;
+      sendMsg({
+        type: "PATCH_STATE",
+        patch: {
+          presets: parsed.length ? parsed : [5, 15, 25, 45, 60],
+          hotkeys: { ...(state.hotkeys || {}), summon: summonVal }
+        }
+      });
+      settingsOpen = false;
+      settingsModalEl.classList.remove("open");
+    };
+  }
+
+  cardEl.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const ver = state.appVersion || "1.2.0";
+    const exp = String(state.exportBuild || 2).padStart(2, "0");
+    ctxMenuEl.innerHTML = `
+      <div class="ctx-meta">Jelly Timer v${ver} (Exp #${exp})</div>
+      <div class="ctx-sep"></div>
+      <button class="ctx-item" data-ctx="mode_timer"><span>Таймер</span><span>${state.mode === "timer" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="mode_sw"><span>Секундомер</span><span>${state.mode === "stopwatch" ? "✓" : ""}</span></button>
+      <div class="ctx-sep"></div>
+      <button class="ctx-item" data-ctx="open_settings"><span>Настройки (Клавиши, пресеты)...</span><span>⚙</span></button>
+      <div class="ctx-sep"></div>
+      <button class="ctx-item" data-ctx="size_mini"><span>Размер: Мини</span><span>${state.sizeMode === "mini" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="size_medium"><span>Размер: Средний</span><span>${state.sizeMode === "medium" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="size_large"><span>Размер: Большой</span><span>${state.sizeMode === "large" ? "✓" : ""}</span></button>
+      <div class="ctx-sep"></div>
+      <button class="ctx-item" data-ctx="th_graphite"><span>Тема: Тёмный графит</span><span>${state.themeKey === "graphite" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="th_warm_espresso"><span>Тема: Тёплый эспрессо</span><span>${state.themeKey === "warm_espresso" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="th_soft_sage"><span>Тема: Мягкий шалфей</span><span>${state.themeKey === "soft_sage" ? "✓" : ""}</span></button>
+      <div class="ctx-sep"></div>
+      <button class="ctx-item pro" data-ctx="open_pro"><span>✨ Jelly Timer Plus (PRO)</span><span>→</span></button>
+      <button class="ctx-item" data-ctx="hide"><span>Скрыть на вкладке</span><span></span></button>
+    `;
+    const mw = 235;
+    const mh = 340;
+    const mx = Math.max(8, Math.min(e.clientX, window.innerWidth - mw - 8));
+    const my = Math.max(8, Math.min(e.clientY, window.innerHeight - mh - 8));
+    ctxMenuEl.style.left = `${mx}px`;
+    ctxMenuEl.style.top = `${my}px`;
+    ctxMenuEl.classList.add("open");
+  });
+
+  ctxMenuEl.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+    const item = e.target.closest("button[data-ctx]");
+    if (!item) return;
+    const act = item.getAttribute("data-ctx");
+    closeContextMenu();
+    if (act === "mode_timer") sendMsg({ type: "SWITCH_MODE", mode: "timer" });
+    else if (act === "mode_sw") sendMsg({ type: "SWITCH_MODE", mode: "stopwatch" });
+    else if (act === "open_settings") openSettingsModal();
+    else if (act.startsWith("size_")) sendMsg({ type: "PATCH_STATE", patch: { sizeMode: act.replace("size_", "") } });
+    else if (act.startsWith("th_")) sendMsg({ type: "PATCH_STATE", patch: { themeKey: act.replace("th_", "") } });
+    else if (act === "open_pro") sendMsg({ type: "OPEN_PRO_PAGE" });
+    else if (act === "hide") sendMsg({ type: "PATCH_STATE", patch: { visible: false } });
+  });
+
+  window.addEventListener("mousedown", () => closeContextMenu());
 
   function startInlineEdit(tb) {
     editingTime = true;
@@ -623,7 +849,15 @@
     else if (act === "reset") sendMsg({ type: "RESET" });
     else if (act === "toggle_mode") sendMsg({ type: "SWITCH_MODE" });
     else if (act === "cycle_size") cycleSize();
-    else if (act === "opacity") {
+    else if (act === "shrink_size") {
+      const next = state.sizeMode === "large" ? "medium" : "mini";
+      sendMsg({ type: "PATCH_STATE", patch: { sizeMode: next } });
+    } else if (act === "grow_size") {
+      const next = state.sizeMode === "mini" ? "medium" : "large";
+      sendMsg({ type: "PATCH_STATE", patch: { sizeMode: next } });
+    } else if (act === "open_settings") {
+      openSettingsModal();
+    } else if (act === "opacity") {
       const presets = [0.95, 0.85, 0.6, 0.35];
       let idx = 0;
       let best = 999;
@@ -674,10 +908,11 @@
     } catch (e) {}
   }
 
-  // Summon hotkey (Right Ctrl) & exclusive key capture when summoned
+  // Summon hotkey (Right Shift / Right Ctrl) & exclusive key capture when summoned
   window.addEventListener("keydown", (e) => {
-    if (editingTime) return;
-    if (e.code === "ControlRight" && !e.repeat) {
+    if (editingTime || settingsOpen) return;
+    const summonKey = (state.hotkeys && state.hotkeys.summon) || "ShiftRight";
+    if ((e.code === summonKey || e.code === "ShiftRight" || e.code === "ControlRight") && !e.repeat) {
       summonedFocus = !summonedFocus;
       alarmFlash = 0;
       spScaleX.velocity += summonedFocus ? 1.4 : -1.1;
@@ -702,7 +937,7 @@
     } else if (e.code === "Space") {
       alarmFlash = 0;
       sendMsg({ type: "TOGGLE_PLAY" });
-    } else if (e.code === "KeyR") {
+    } else if (e.code === "KeyR" || e.code === "AltRight") {
       alarmFlash = 0;
       sendMsg({ type: "RESET" });
     } else if (e.code === "KeyM") {

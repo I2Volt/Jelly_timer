@@ -39,14 +39,16 @@
 
 | Action | Mouse / UI Control | Default Hotkey (Customizable) |
 | :--- | :--- | :--- |
-| **Start / Pause** | Click `Старт / Пауза` button | `Space` (Desktop) / `Right Ctrl` (Browser) |
-| **Reset Clock** | Click `↻` Reset button | `R` (Desktop) / `Right Alt` (Browser) |
-| **Switch Timer ↔ Stopwatch** | Click top-left mode pill | `M` |
-| **Cycle Size (`Mini`/`Med`/`Large`)** | Click `⤢` button or double-click background | `S` |
+| **Summon / Focus Timer** | Press hotkey (highlights widget with white border) | `Right Shift` / `Right Ctrl` |
+| **Start / Pause** | Click `Старт / Пауза` button | `Space` (when summoned) |
+| **Reset Clock** | Click `↻` Reset button | `R` / `Right Alt` (when summoned) |
+| **Switch Timer ↔ Stopwatch** | Click top-left mode pill | `M` (when summoned) |
+| **Resize (`Mini`/`Med`/`Large`)** | Click `−` / `+` buttons or double-click background | `S` (when summoned) |
+| **Settings & Hotkeys** | Click `⚙` button or Right-click → `Настройки...` | — |
 | **Inline Time Edit (`MM:SS`)** | **Double-click** directly on the timer digits | `Enter` to save, `Esc` to cancel |
-| **Adjust Time (`±1 min`)** | Click `-1м` / `+1м` / `+5м` or **Scroll Wheel** | — |
-| **Adjust Opacity (`20%–100%`)** | Click `◐` Opacity button or **`Ctrl + Scroll Wheel`** | — |
-| **Context Menu & Themes** | **Right-click** anywhere on the desktop widget | — |
+| **Adjust Time (`±1 min`)** | Click `-1м` / `+1м` / `+5м` or **Scroll Wheel** (when paused) | — |
+| **Adjust Opacity (`20%–100%`)** | Use slider in `⚙` or **`Ctrl + Scroll Wheel`** | — |
+| **Context Menu & Themes** | **Right-click** anywhere on the widget | — |
 
 ---
 

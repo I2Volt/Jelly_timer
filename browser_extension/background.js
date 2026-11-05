@@ -1,3 +1,8 @@
+const EXT_VERSION = "1.2.0";
+const EXPORT_BUILD = 3;
+const BUILD_DATE = "2026-11-05";
+const REMOTE_VERSION_URL = "https://raw.githubusercontent.com/I2Volt/Jelly_timer/main/version_info.json";
+
 const DEFAULT_STATE = {
   visible: true,
   mode: "timer",          // "timer" | "stopwatch"
@@ -13,20 +18,49 @@ const DEFAULT_STATE = {
   stopwatchElapsed: 0,
   isRunning: false,
   lastTimestamp: null,    // Date.now() in ms when running
+  presets: [5, 15, 25, 45, 60],
+  globalHotkeys: false,
+  appVersion: EXT_VERSION,
+  exportBuild: EXPORT_BUILD,
+  buildDate: BUILD_DATE,
   hotkeys: {
-    play_pause: "ControlRight",
-    reset: "AltRight",
+    summon: "ShiftRight",
+    play_pause: "Space",
+    reset: "KeyR",
     switch_mode: "KeyM",
     cycle_size: "KeyS"
   }
 };
 
+function syncRemoteVersionMeta(callback) {
+  fetch(REMOTE_VERSION_URL, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (data) {
+        chrome.storage.local.set({ jellyRemoteMeta: data }, () => {
+          if (callback) callback(data);
+        });
+      } else if (callback) {
+        callback(null);
+      }
+    })
+    .catch(() => {
+      if (callback) callback(null);
+    });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.get(["jellyState"], (res) => {
-    if (!res.jellyState) {
-      chrome.storage.local.set({ jellyState: DEFAULT_STATE });
-    }
+    const merged = {
+      ...DEFAULT_STATE,
+      ...(res.jellyState || {}),
+      appVersion: EXT_VERSION,
+      exportBuild: EXPORT_BUILD,
+      buildDate: BUILD_DATE
+    };
+    chrome.storage.local.set({ jellyState: merged });
   });
+  syncRemoteVersionMeta();
 });
 
 // Toggle widget visibility when clicking the extension toolbar icon
@@ -40,8 +74,27 @@ chrome.action.onClicked.addListener(() => {
 
 // Handle atomic time/state updates from any tab
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === "OPEN_PRO_PAGE") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("pro_upgrade.html") });
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg.type === "CHECK_UPDATES") {
+    syncRemoteVersionMeta((meta) => {
+      sendResponse({ ok: true, meta, localVersion: EXT_VERSION, localExport: EXPORT_BUILD });
+    });
+    return true;
+  }
+
   chrome.storage.local.get(["jellyState"], (res) => {
-    let st = { ...DEFAULT_STATE, ...(res.jellyState || {}) };
+    let st = {
+      ...DEFAULT_STATE,
+      ...(res.jellyState || {}),
+      appVersion: EXT_VERSION,
+      exportBuild: EXPORT_BUILD,
+      buildDate: BUILD_DATE
+    };
     const now = Date.now();
 
     // First synchronize live running clock before applying action
