@@ -13,7 +13,7 @@ import tempfile
 import webbrowser
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QMenu, QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QSlider, QCheckBox, QLineEdit
+    QLabel, QPushButton, QSlider, QCheckBox, QLineEdit, QComboBox
 )
 from PyQt6.QtCore import Qt, QTimer, QRectF, QPointF, QByteArray, pyqtSignal, QObject
 from PyQt6.QtGui import (
@@ -412,6 +412,116 @@ class CrossPlatformHotkeyMonitor(QObject):
         token = self._normalize_pynput_key(key)
         if token and token in self.held_tokens:
             self.held_tokens.discard(token)
+
+
+
+# ----------------- LOCALIZATION (EN / RU / KZ) -----------------
+import locale as _sys_locale
+
+I18N_DICT = {
+    "en": {
+        "timer": "Timer",
+        "timer_plus": "Timer +",
+        "stopwatch": "Stopwatch",
+        "stopwatch_plus": "Stopwatch +",
+        "start": "Start",
+        "pause": "Pause",
+        "focus": "Focus",
+        "break": "Break",
+        "flow": "Flow",
+        "break_15": "Break (1/5)",
+        "to_work": "Work",
+        "min_short": "m",
+        "ctx_edit_time": "Type time from keyboard",
+        "ctx_settings": "Settings (Hotkeys, Language, Presets)...",
+        "ctx_global_hk": "Listen to hotkeys globally",
+        "ctx_modes": "Enable Pomodoro / Flowtime...",
+        "ctx_stats": "Focus Statistics...",
+        "ctx_size": "Size",
+        "ctx_mini": "Mini",
+        "ctx_med": "Medium",
+        "ctx_large": "Large",
+        "ctx_theme": "Theme",
+        "ctx_lang": "Language / Тіл / Язык",
+        "ctx_snap": "Magnetic Edge-Snap",
+        "ctx_quit": "Quit",
+        "dlg_lang": "Language / Тіл / Язык:",
+        "dlg_save": "Save",
+    },
+    "ru": {
+        "timer": "Таймер",
+        "timer_plus": "Таймер +",
+        "stopwatch": "Секундомер",
+        "stopwatch_plus": "Секундомер +",
+        "start": "Старт",
+        "pause": "Пауза",
+        "focus": "Фокус",
+        "break": "Отдых",
+        "flow": "Поток",
+        "break_15": "Отдых (1/5)",
+        "to_work": "В работу",
+        "min_short": "м",
+        "ctx_edit_time": "Ввести время с клавиатуры",
+        "ctx_settings": "Настройки (Клавиша вызова, язык, пресеты)...",
+        "ctx_global_hk": "Слушать все клавиши всегда",
+        "ctx_modes": "Включить Помодоро / Flowtime (Инструкция)...",
+        "ctx_stats": "Статистика фокуса...",
+        "ctx_size": "Размер",
+        "ctx_mini": "Мини",
+        "ctx_med": "Средний",
+        "ctx_large": "Большой",
+        "ctx_theme": "Оттенок фона",
+        "ctx_lang": "Язык / Language / Тіл",
+        "ctx_snap": "Прилипание к краям",
+        "ctx_quit": "Закрыть",
+        "dlg_lang": "Язык / Language / Тіл:",
+        "dlg_save": "Сохранить",
+    },
+    "kz": {
+        "timer": "Таймер",
+        "timer_plus": "Таймер +",
+        "stopwatch": "Секундөлшегіш",
+        "stopwatch_plus": "Секундөлшегіш +",
+        "start": "Бастау",
+        "pause": "Кідірту",
+        "focus": "Фокус",
+        "break": "Демалыс",
+        "flow": "Ағын",
+        "break_15": "Демалыс (1/5)",
+        "to_work": "Жұмысқа",
+        "min_short": "м",
+        "ctx_edit_time": "Уақытты пернетақтадан енгізу",
+        "ctx_settings": "Баптаулар (Перне, тіл, пресеттер)...",
+        "ctx_global_hk": "Пернелерді әрқашан тыңдау",
+        "ctx_modes": "Помодоро / Flowtime қосу...",
+        "ctx_stats": "Фокус статистикасы...",
+        "ctx_size": "Өлшем",
+        "ctx_mini": "Мини",
+        "ctx_med": "Орташа",
+        "ctx_large": "Үлкен",
+        "ctx_theme": "Фон реңкі",
+        "ctx_lang": "Тіл / Language / Язык",
+        "ctx_snap": "Жиекке жабысу",
+        "ctx_quit": "Жабу",
+        "dlg_lang": "Тіл / Language / Язык:",
+        "dlg_save": "Сақтау",
+    },
+}
+
+def detect_default_lang() -> str:
+    try:
+        loc = (_sys_locale.getdefaultlocale()[0] or "").lower()
+        if loc.startswith("kk") or loc.startswith("kz"):
+            return "kz"
+        if loc.startswith("ru"):
+            return "ru"
+    except Exception:
+        pass
+    return "ru"
+
+def tr_text(lang: str, key: str) -> str:
+    d = I18N_DICT.get(lang, I18N_DICT["ru"])
+    return d.get(key, I18N_DICT["en"].get(key, key))
 
 
 class SpringValue:
