@@ -18,33 +18,55 @@ IS_LINUX = (OS_NAME == "Linux")
 
 
 def create_icon():
-    """Minimalist Linear/Apple-style monochrome dark graphite icon."""
-    size = 256
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
+    """Minimalist Linear/Apple-style monochrome dark graphite jellyfish-clock icon."""
+    from PyQt6.QtGui import QImage, QPainter, QColor, QPen, QPainterPath
+    from PyQt6.QtCore import Qt, QRectF, QPointF
 
-    # Matte zinc squircle (#18181B) with subtle hairline border (#3F3F46)
-    draw.rounded_rectangle(
-        [16, 16, size - 16, size - 16],
-        radius=60,
-        fill=(24, 24, 27, 255),
-        outline=(63, 63, 70, 255),
-        width=6,
-    )
-    # Clean muted dial ring (#52525B)
-    draw.ellipse(
-        [56, 56, size - 56, size - 56],
-        outline=(82, 82, 91, 255),
-        width=10,
-    )
-    # Minimalist crisp off-white hands (#F4F4F5)
-    cx, cy = size // 2, size // 2
-    draw.line([(cx, cy), (cx, cy - 44)], fill=(244, 244, 245, 255), width=12)
-    draw.line([(cx, cy), (cx + 34, cy + 16)], fill=(161, 161, 170, 255), width=10)
-    draw.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=(244, 244, 245, 255))
+    base_size = 1024
+    s = base_size / 256.0
+    qimg = QImage(base_size, base_size, QImage.Format.Format_ARGB32)
+    qimg.fill(Qt.GlobalColor.transparent)
+    p = QPainter(qimg)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
+    p.setBrush(QColor(24, 24, 27))
+    p.setPen(QPen(QColor(72, 72, 80), 6.0 * s))
+    p.drawRoundedRect(QRectF(16 * s, 16 * s, 224 * s, 224 * s), 60 * s, 60 * s)
+
+    cx, cy = 128.0, 111.0
+    r = 62.0
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    p.setPen(QPen(QColor(135, 135, 148, 230), 7.2 * s, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+
+    for sx, c1x, c1y, c2x, c2y, ex, ey in [
+        (99, 88, 183, 105, 200, 93, 216),
+        (128, 117, 191, 139, 207, 127, 224),
+        (157, 147, 183, 165, 200, 153, 216),
+    ]:
+        sy = 173 if sx == 128 else 166
+        path = QPainterPath(QPointF(sx * s, sy * s))
+        path.cubicTo(QPointF(c1x * s, c1y * s), QPointF(c2x * s, c2y * s), QPointF(ex * s, ey * s))
+        p.drawPath(path)
+
+    p.setPen(QPen(QColor(170, 170, 180), 10.5 * s))
+    p.drawEllipse(QPointF(cx * s, cy * s), r * s, r * s)
+
+    p.setPen(QPen(QColor(161, 161, 170), 10.0 * s, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+    p.drawLine(QPointF(cx * s, cy * s), QPointF((cx + 33) * s, (cy + 16) * s))
+
+    p.setPen(QPen(QColor(244, 244, 245), 12.0 * s, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+    p.drawLine(QPointF(cx * s, cy * s), QPointF(cx * s, (cy - 40) * s))
+
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(QColor(244, 244, 245))
+    p.drawEllipse(QPointF(cx * s, cy * s), 8.2 * s, 8.2 * s)
+    p.end()
+
+    q256 = qimg.scaled(256, 256, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    q256.save(ICON_PNG_PATH)
+    img = Image.open(ICON_PNG_PATH).convert("RGBA")
     img.save(ICON_ICO_PATH, format="ICO", sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])
-    img.save(ICON_PNG_PATH, format="PNG")
+    shutil.copy2(ICON_ICO_PATH, os.path.join(PROJECT_DIR, "jelly_timer_v2.ico"))
 
 
 def create_windows_shortcuts():

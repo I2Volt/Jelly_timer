@@ -1,8 +1,11 @@
 {
+  "app_version": "1.2.0",
+  "export_build": 2,
+  "build_date": "2026-11-04",
   "mode": "timer",
   "size_mode": "large",
   "theme_key": "graphite",
-  "bg_opacity": 0.8,
+  "bg_opacity": 0.95,
   "snap_enabled": true,
   "global_hotkeys_v3": false,
   "presets": [
@@ -35,6 +38,6 @@
     }
   },
   "timer_total": 1500.0,
-  "x": 1282.0,
-  "y": 190.0
+  "x": 1397.0,
+  "y": 165.0
 }

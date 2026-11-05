@@ -4,16 +4,21 @@ __pycache__/
 build/
 dist/
 *.spec
+file_version_info.txt
 .DS_Store
 Thumbs.db
 
 # Private / Commercial PRO files (never pushed to public GitHub)
+.git_pro/
+README_PRO.md
 jelly_timer_pro.py
 jelly_timer_pro.pyw
 setup_pro_shortcut.py
 config_pro.json
 stats_pro.json
 jelly_timer_pro.ico
+jelly_timer_pro_v2.ico
+jelly_timer_v2.ico
 jelly_timer_pro.png
 icons_export/
 browser_extension_pro/

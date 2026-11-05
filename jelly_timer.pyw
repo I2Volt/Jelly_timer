@@ -10,6 +10,7 @@ import platform
 import subprocess
 import threading
 import tempfile
+import webbrowser
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QMenu, QDialog, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QSlider, QCheckBox, QLineEdit
@@ -44,7 +45,33 @@ if IS_WIN:
 
 UI_FONT = "SF Pro Display" if IS_MAC else ("Ubuntu" if IS_LINUX else "Segoe UI")
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+APP_VERSION = "1.2.0"
+EXPORT_BUILD = 3
+BUILD_DATE = "2026-11-05"
+VERSION_LABEL = f"v{APP_VERSION} (Exp #{EXPORT_BUILD:02d} • {BUILD_DATE})"
+
+if getattr(sys, "frozen", False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
+
+
+def open_pro_showcase():
+    local_html = os.path.join(BASE_DIR, "browser_extension", "pro_upgrade.html")
+    if os.path.exists(local_html):
+        webbrowser.open(f"file:///{local_html.replace(os.sep, '/')}")
+    else:
+        webbrowser.open("https://github.com/I2Volt/Jelly_timer#jelly-timer-plus-pro")
+
+
+def open_browser_extension_info():
+    ext_dir = os.path.join(BASE_DIR, "browser_extension")
+    if os.path.exists(ext_dir) and IS_WIN:
+        subprocess.Popen(["explorer", ext_dir])
+    else:
+        webbrowser.open("https://github.com/I2Volt/Jelly_timer#-install-the-browser-extension-chrome--edge--brave--opera--yandex")
 
 _ALARM_WAV_CACHE = None
 
@@ -652,7 +679,7 @@ class SettingsDialog(QDialog):
     def __init__(self, parent_widget):
         super().__init__(parent_widget)
         self.w = parent_widget
-        self.setWindowTitle("Настройки")
+        self.setWindowTitle(f"Jelly Timer — Настройки ({VERSION_LABEL})")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
         self.setMinimumWidth(430)
         self.setStyleSheet(f"""
@@ -764,6 +791,45 @@ class SettingsDialog(QDialog):
         op_row.addWidget(op_lbl)
         op_row.addWidget(self.op_slider)
         layout.addLayout(op_row)
+
+        meta_row = QHBoxLayout()
+        ver_lbl = QLabel(f"Jelly Timer • {VERSION_LABEL}")
+        ver_lbl.setStyleSheet("color: #71717A; font-size: 11px;")
+        ext_btn = QPushButton("🌐 Расширение")
+        ext_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        ext_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #222226;
+                color: #D4D4D8;
+                border: 1px solid #3F3F46;
+                border-radius: 5px;
+                padding: 3px 8px;
+                font-size: 11px;
+            }
+            QPushButton:hover { background-color: #2E2E34; color: #FAFAFA; }
+        """)
+        ext_btn.clicked.connect(open_browser_extension_info)
+
+        pro_btn = QPushButton("✨ Версия Plus (PRO)")
+        pro_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        pro_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27272A;
+                color: #FAFAFA;
+                border: 1px solid #52525B;
+                border-radius: 5px;
+                padding: 3px 9px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            QPushButton:hover { background-color: #3F3F46; }
+        """)
+        pro_btn.clicked.connect(open_pro_showcase)
+        meta_row.addWidget(ver_lbl)
+        meta_row.addStretch()
+        meta_row.addWidget(ext_btn)
+        meta_row.addWidget(pro_btn)
+        layout.addLayout(meta_row)
 
         layout.addStretch()
 
@@ -958,6 +1024,9 @@ class JellyTimerWidget(QWidget):
     def save_config(self):
         try:
             data = {
+                "app_version": APP_VERSION,
+                "export_build": EXPORT_BUILD,
+                "build_date": BUILD_DATE,
                 "mode": self.mode,
                 "size_mode": self.size_mode,
                 "theme_key": self.theme_key,
@@ -1934,6 +2003,10 @@ class JellyTimerWidget(QWidget):
             }}
         """)
 
+        act_ver = menu.addAction(f"Jelly Timer • v{APP_VERSION} (Exp #{EXPORT_BUILD:02d})")
+        act_ver.setEnabled(False)
+        menu.addSeparator()
+
         act_timer = menu.addAction("Таймер" + (" ✓" if self.mode == "timer" else ""))
         act_sw = menu.addAction("Секундомер" + (" ✓" if self.mode == "stopwatch" else ""))
         if self.mode == "timer":
@@ -1944,6 +2017,7 @@ class JellyTimerWidget(QWidget):
 
         act_keys = menu.addAction("Настройки (Клавиша вызова, пресеты)...")
         act_global_hk = menu.addAction("Слушать все клавиши всегда" + (" ✓" if self.global_hotkeys else ""))
+        act_pro = menu.addAction("✨ Jelly Timer Plus (PRO)...")
         menu.addSeparator()
 
         size_menu = menu.addMenu("Размер")
@@ -1976,6 +2050,8 @@ class JellyTimerWidget(QWidget):
         elif chosen == act_global_hk:
             self.global_hotkeys = not self.global_hotkeys
             self.save_config()
+        elif chosen == act_pro:
+            open_pro_showcase()
         elif chosen == act_s_mini:
             self.set_size_mode("mini")
         elif chosen == act_s_med:
@@ -2016,6 +2092,9 @@ def _ensure_single_instance(lock_name: str):
 
 
 def main():
+    if "--version" in sys.argv or "-v" in sys.argv:
+        print(f"Jelly Timer {VERSION_LABEL}")
+        sys.exit(0)
     _ensure_single_instance("jelly_timer_free.pid")
     app = QApplication(sys.argv)
     widget = JellyTimerWidget()
