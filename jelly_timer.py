@@ -46,7 +46,7 @@ if IS_WIN:
 UI_FONT = "SF Pro Display" if IS_MAC else ("Ubuntu" if IS_LINUX else "Segoe UI")
 
 APP_VERSION = "1.2.0"
-EXPORT_BUILD = 3
+EXPORT_BUILD = 4
 BUILD_DATE = "2026-11-05"
 VERSION_LABEL = f"v{APP_VERSION} (Exp #{EXPORT_BUILD:02d} • {BUILD_DATE})"
 
@@ -1847,6 +1847,7 @@ class JellyTimerWidget(QWidget):
                 else:
                     self.sp_scale_y.set_immediate(1.0 + pull_ratio * 0.16)
                     self.sp_scale_x.set_immediate(1.0 - pull_ratio * 0.10)
+                self.update_window_geometry()
                 return
             else:
                 edge_released = self.detaching_from_edge

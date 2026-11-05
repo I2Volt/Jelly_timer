@@ -1,5 +1,6 @@
 (() => {
   if (window.__jellyTimerInjected) return;
+  if (document.contentType && document.contentType.startsWith("image/")) return;
   window.__jellyTimerInjected = true;
 
   const SIZES = {
@@ -973,11 +974,18 @@
 
   window.addEventListener("resize", () => applyDockedPositionFromState(false));
 
-  // 60 FPS Animation loop
+  // 60 FPS Animation loop with dirty-checking (zero DOM mutations when idle)
   let lastFrame = performance.now();
+  let lastGeomSig = "";
+  let lastVisualSig = "";
   function tick(now) {
     const dt = (now - lastFrame) / 1000.0;
     lastFrame = now;
+
+    if (!state.visible) {
+      requestAnimationFrame(tick);
+      return;
+    }
 
     const curSec = getLiveSeconds();
     if (state.mode === "timer" && prevLiveSec > 0 && curSec <= 0) {
@@ -988,6 +996,7 @@
     }
     prevLiveSec = curSec;
 
+    let bgStr, brdStr;
     if (alarmFlash > 0) {
       alarmFlash = Math.max(0, alarmFlash - dt);
       const pulse = Math.sin(alarmFlash * 14.0) * 0.5 + 0.5;
@@ -998,12 +1007,19 @@
       const g = Math.round(bg * (1 - mix) + 24 * mix);
       const b = Math.round(bb * (1 - mix) + 34 * mix);
       const a = Math.max(state.opacity, 0.96 * pulse);
-      cardEl.style.background = `rgba(${r}, ${g}, ${b}, ${a})`;
-      cardEl.style.border = `2.2px solid rgba(255, 95, 95, ${0.75 + 0.25 * pulse})`;
+      bgStr = `rgba(${r}, ${g}, ${b}, ${a})`;
+      brdStr = `2.2px solid rgba(255, 95, 95, ${0.75 + 0.25 * pulse})`;
     } else {
       const th = THEMES[state.themeKey] || THEMES.graphite;
-      cardEl.style.background = `rgba(${th.bg}, ${state.opacity})`;
-      cardEl.style.border = summonedFocus ? "1.8px solid rgba(244, 244, 245, 0.95)" : `1px solid ${th.border}`;
+      bgStr = `rgba(${th.bg}, ${state.opacity})`;
+      brdStr = summonedFocus ? "1.8px solid rgba(244, 244, 245, 0.95)" : `1px solid ${th.border}`;
+    }
+
+    const vSig = `${bgStr}|${brdStr}`;
+    if (vSig !== lastVisualSig) {
+      lastVisualSig = vSig;
+      cardEl.style.background = bgStr;
+      cardEl.style.border = brdStr;
     }
 
     spX.step(dt);
@@ -1013,13 +1029,19 @@
     spScaleX.step(dt);
     spScaleY.step(dt);
 
-    cardEl.style.left = `${spX.value}px`;
-    cardEl.style.top = `${spY.value}px`;
-    cardEl.style.width = `${spW.value}px`;
-    cardEl.style.height = `${spH.value}px`;
-    cardEl.style.transform = `scale(${spScaleX.value}, ${spScaleY.value})`;
+    const gSig = `${spX.value.toFixed(1)}|${spY.value.toFixed(1)}|${spW.value.toFixed(1)}|${spH.value.toFixed(1)}|${spScaleX.value.toFixed(3)}|${spScaleY.value.toFixed(3)}`;
+    if (gSig !== lastGeomSig) {
+      lastGeomSig = gSig;
+      cardEl.style.left = `${spX.value.toFixed(1)}px`;
+      cardEl.style.top = `${spY.value.toFixed(1)}px`;
+      cardEl.style.width = `${spW.value.toFixed(1)}px`;
+      cardEl.style.height = `${spH.value.toFixed(1)}px`;
+      cardEl.style.transform = `scale(${spScaleX.value.toFixed(3)}, ${spScaleY.value.toFixed(3)})`;
+    }
 
-    updateTimeText();
+    if (state.isRunning || alarmFlash > 0) {
+      updateTimeText();
+    }
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);

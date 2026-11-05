@@ -1,5 +1,5 @@
 const EXT_VERSION = "1.2.0";
-const EXPORT_BUILD = 3;
+const EXPORT_BUILD = 4;
 const BUILD_DATE = "2026-11-05";
 const REMOTE_VERSION_URL = "https://raw.githubusercontent.com/I2Volt/Jelly_timer/main/version_info.json";
 
