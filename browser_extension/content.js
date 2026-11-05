@@ -3,6 +3,105 @@
   if (document.contentType && document.contentType.startsWith("image/")) return;
   window.__jellyTimerInjected = true;
 
+  const I18N = {
+    en: {
+      timer: "Timer",
+      stopwatch: "Stopwatch",
+      start: "Start",
+      pause: "Pause",
+      settings: "Settings",
+      shrink: "Smaller",
+      grow: "Larger",
+      hide: "Hide",
+      min_short: "m",
+      summon_label: "Focus / Summon key:",
+      language_label: "Language / Тіл / Язык:",
+      hint_html: "Press <b>Right Shift</b> or <b>Right Ctrl</b> to highlight the timer and control it with: <b>Space</b> (Start/Pause), <b>R</b> (Reset), <b>M</b> (Mode), <b>S</b> (Size), <b>Esc</b> (Exit).",
+      presets_label: "Large mode presets (minutes, comma-separated):",
+      opacity_label: "Opacity",
+      sound_label: "Alarm sound:",
+      test_sound: "Test sound",
+      pro_btn: "✨ Plus Version (PRO)",
+      save_btn: "Save",
+      ctx_settings: "Settings (Hotkeys, Language, Presets)...",
+      ctx_size_mini: "Size: Mini",
+      ctx_size_med: "Size: Medium",
+      ctx_size_large: "Size: Large",
+      ctx_th_graphite: "Theme: Dark Graphite",
+      ctx_th_espresso: "Theme: Warm Espresso",
+      ctx_th_sage: "Theme: Soft Sage",
+      ctx_hide: "Hide on this tab"
+    },
+    ru: {
+      timer: "Таймер",
+      stopwatch: "Секундомер",
+      start: "Старт",
+      pause: "Пауза",
+      settings: "Настройки",
+      shrink: "Уменьшить",
+      grow: "Увеличить",
+      hide: "Скрыть",
+      min_short: "м",
+      summon_label: "Вызвать / Выбрать таймер:",
+      language_label: "Язык / Language / Тіл:",
+      hint_html: "Нажмите <b>Right Shift</b> или <b>Right Ctrl</b> — таймер подсветится белой рамкой и перехватит кнопки: <b>Space</b> (Старт/Пауза), <b>R</b> (Сброс), <b>M</b> (Режим), <b>S</b> (Размер), <b>Esc</b> (Выход).",
+      presets_label: "Пресеты большого режима (мин, через запятую):",
+      opacity_label: "Прозрачность",
+      sound_label: "Звуковой сигнал:",
+      test_sound: "Проверить звук",
+      pro_btn: "✨ Версия Plus (PRO)",
+      save_btn: "Сохранить",
+      ctx_settings: "Настройки (Клавиши, язык, пресеты)...",
+      ctx_size_mini: "Размер: Мини",
+      ctx_size_med: "Размер: Средний",
+      ctx_size_large: "Размер: Большой",
+      ctx_th_graphite: "Тема: Тёмный графит",
+      ctx_th_espresso: "Тема: Тёплый эспрессо",
+      ctx_th_sage: "Тема: Мягкий шалфей",
+      ctx_hide: "Скрыть на вкладке"
+    },
+    kz: {
+      timer: "Таймер",
+      stopwatch: "Секундөлшегіш",
+      start: "Бастау",
+      pause: "Кідірту",
+      settings: "Баптаулар",
+      shrink: "Кішірейту",
+      grow: "Үлкейту",
+      hide: "Жасыру",
+      min_short: "м",
+      summon_label: "Таймерді шақыру пернесі:",
+      language_label: "Тіл / Language / Язык:",
+      hint_html: "<b>Right Shift</b> немесе <b>Right Ctrl</b> басыңыз — таймер ақ жиекпен белгіленіп, пернелерді басқарады: <b>Space</b> (Бастау/Кідірту), <b>R</b> (Қалпына келтіру), <b>M</b> (Режим), <b>S</b> (Өлшем), <b>Esc</b> (Шығу).",
+      presets_label: "Үлкен режим пресеттері (мин, үтір арқылы):",
+      opacity_label: "Мөлдірлік",
+      sound_label: "Дыбыстық сигнал:",
+      test_sound: "Дыбысты тексеру",
+      pro_btn: "✨ Plus нұсқасы (PRO)",
+      save_btn: "Сақтау",
+      ctx_settings: "Баптаулар (Пернелер, тіл, пресеттер)...",
+      ctx_size_mini: "Өлшем: Мини",
+      ctx_size_med: "Өлшем: Орташа",
+      ctx_size_large: "Өлшем: Үлкен",
+      ctx_th_graphite: "Тақырып: Күңгірт графит",
+      ctx_th_espresso: "Тақырып: Жылы эспрессо",
+      ctx_th_sage: "Тақырып: Жұмсақ шалфей",
+      ctx_hide: "Қойындыда жасыру"
+    }
+  };
+
+  function detectDefaultLang() {
+    const nav = ((navigator && navigator.language) || "en").toLowerCase();
+    if (nav.startsWith("kk") || nav.startsWith("kz")) return "kz";
+    if (nav.startsWith("ru")) return "ru";
+    return "en";
+  }
+
+  function tr(key) {
+    const lang = (state && state.lang && I18N[state.lang]) ? state.lang : detectDefaultLang();
+    return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+  }
+
   const SIZES = {
     mini: { w: 208, h: 66 },
     medium: { w: 284, h: 138 },
@@ -79,6 +178,7 @@
 
   let state = {
     visible: true,
+    lang: detectDefaultLang(),
     mode: "timer",
     sizeMode: "medium",
     themeKey: "graphite",
@@ -432,9 +532,10 @@
     cardEl.style.border = `1px solid ${th.border}`;
 
     const modeIcon = state.mode === "timer" ? SVGS.timer : SVGS.stopwatch;
-    const modeLabel = state.mode === "timer" ? "Таймер" : "Секундомер";
+    const modeLabel = state.mode === "timer" ? tr("timer") : tr("stopwatch");
     const playIcon = state.isRunning ? SVGS.pause : SVGS.play;
-    const playLabel = state.isRunning ? "Пауза" : "Старт";
+    const playLabel = state.isRunning ? tr("pause") : tr("start");
+    const mShort = tr("min_short");
     const liveSec = getLiveSeconds();
     const showReset = state.isRunning || (state.mode === "timer" ? Math.abs(liveSec - state.timerTotal) > 0.1 : liveSec > 0.1);
 
@@ -456,10 +557,10 @@
         <div class="top-row">
           <button class="btn" data-act="toggle_mode" style="height:22px;">${modeIcon} <span>${modeLabel}</span> ${SVGS.swap}</button>
           <div style="display:flex;gap:4px;">
-            <button class="btn" data-act="open_settings" title="Настройки" style="width:22px;height:22px;padding:0;">${SVGS.settings}</button>
-            <button class="btn" data-act="shrink_size" title="Уменьшить" style="width:22px;height:22px;padding:0;">${SVGS.minus}</button>
-            <button class="btn" data-act="grow_size" title="Увеличить" style="width:22px;height:22px;padding:0;">${SVGS.plus}</button>
-            <button class="btn" data-act="close" title="Скрыть" style="width:22px;height:22px;padding:0;">${SVGS.close}</button>
+            <button class="btn" data-act="open_settings" title="${tr('settings')}" style="width:22px;height:22px;padding:0;">${SVGS.settings}</button>
+            <button class="btn" data-act="shrink_size" title="${tr('shrink')}" style="width:22px;height:22px;padding:0;">${SVGS.minus}</button>
+            <button class="btn" data-act="grow_size" title="${tr('grow')}" style="width:22px;height:22px;padding:0;">${SVGS.plus}</button>
+            <button class="btn" data-act="close" title="${tr('hide')}" style="width:22px;height:22px;padding:0;">${SVGS.close}</button>
           </div>
         </div>
         <div class="time-box" data-act="time_box" style="font-size:32px;margin:2px 0;"></div>
@@ -471,29 +572,29 @@
       `;
     } else {
       const presetList = (Array.isArray(state.presets) && state.presets.length) ? state.presets : [5, 15, 25, 45, 60];
-      const presetBtns = presetList.map((m) => `<button class="btn" data-act="preset_${m}" style="flex:1;height:24px;">${m}м</button>`).join("");
+      const presetBtns = presetList.map((m) => `<button class="btn" data-act="preset_${m}" style="flex:1;height:24px;">${m}${mShort}</button>`).join("");
       cardEl.style.flexDirection = "column";
       cardEl.style.padding = "12px 12px 14px 12px";
       cardEl.innerHTML = `
         <div class="top-row">
           <button class="btn" data-act="toggle_mode" style="height:24px;">${modeIcon} <span>${modeLabel}</span> ${SVGS.swap}</button>
           <div style="display:flex;gap:4px;">
-            <button class="btn" data-act="open_settings" title="Настройки" style="width:24px;height:24px;padding:0;">${SVGS.settings}</button>
-            <button class="btn" data-act="shrink_size" title="Уменьшить" style="width:24px;height:24px;padding:0;">${SVGS.minus}</button>
-            <button class="btn" data-act="grow_size" title="Увеличить" style="width:24px;height:24px;padding:0;">${SVGS.plus}</button>
-            <button class="btn" data-act="close" title="Скрыть" style="width:24px;height:24px;padding:0;">${SVGS.close}</button>
+            <button class="btn" data-act="open_settings" title="${tr('settings')}" style="width:24px;height:24px;padding:0;">${SVGS.settings}</button>
+            <button class="btn" data-act="shrink_size" title="${tr('shrink')}" style="width:24px;height:24px;padding:0;">${SVGS.minus}</button>
+            <button class="btn" data-act="grow_size" title="${tr('grow')}" style="width:24px;height:24px;padding:0;">${SVGS.plus}</button>
+            <button class="btn" data-act="close" title="${tr('hide')}" style="width:24px;height:24px;padding:0;">${SVGS.close}</button>
           </div>
         </div>
         <div class="time-box" data-act="time_box" style="font-size:40px;margin:2px 0;"></div>
         ${state.mode === "timer" ? `<div class="preset-row">${presetBtns}</div>` : ""}
         <div class="bottom-row" style="justify-content:center;">
           ${state.mode === "timer" ? `
-            <button class="btn" data-act="sub_5m" style="height:28px;">-5м</button>
-            <button class="btn" data-act="sub_1m" style="height:28px;">-1м</button>
+            <button class="btn" data-act="sub_5m" style="height:28px;">-5${mShort}</button>
+            <button class="btn" data-act="sub_1m" style="height:28px;">-1${mShort}</button>
             <button class="btn primary" data-act="play" style="height:28px;flex:1;">${playIcon} <span>${playLabel}</span></button>
             ${showReset ? `<button class="btn" data-act="reset" style="width:36px;height:28px;padding:0;">${SVGS.reset}</button>` : ""}
-            <button class="btn" data-act="add_1m" style="height:28px;">+1м</button>
-            <button class="btn" data-act="add_5m" style="height:28px;">+5м</button>
+            <button class="btn" data-act="add_1m" style="height:28px;">+1${mShort}</button>
+            <button class="btn" data-act="add_5m" style="height:28px;">+5${mShort}</button>
           ` : `
             <button class="btn primary" data-act="play" style="height:28px;width:116px;">${playIcon} <span>${playLabel}</span></button>
             ${showReset ? `<button class="btn" data-act="reset" style="width:38px;height:28px;padding:0;">${SVGS.reset}</button>` : ""}
@@ -586,40 +687,47 @@
   function openSettingsModal() {
     settingsOpen = true;
     const ver = state.appVersion || "1.2.0";
-    const exp = String(state.exportBuild || 2).padStart(2, "0");
+    const exp = String(state.exportBuild || 4).padStart(2, "0");
     const presetStr = (Array.isArray(state.presets) && state.presets.length ? state.presets : [5, 15, 25, 45, 60]).join(", ");
     const curSummon = (state.hotkeys && state.hotkeys.summon) || "ShiftRight";
+    const curLang = (state.lang && I18N[state.lang]) ? state.lang : detectDefaultLang();
     settingsModalEl.innerHTML = `
       <div class="st-row">
-        <strong style="font-size:14px;color:#FAFAFA;">Настройки • v${ver} (Exp #${exp})</strong>
+        <strong style="font-size:14px;color:#FAFAFA;">${tr("settings")} • v${ver} (Exp #${exp})</strong>
         <button class="btn" id="stCloseX" style="width:24px;height:24px;padding:0;">${SVGS.close}</button>
       </div>
       <div class="st-row">
-        <span>Вызвать / Выбрать таймер:</span>
+        <span>${tr("language_label")}</span>
+        <select id="stLang" class="st-input" style="width:155px;">
+          <option value="en" ${curLang === "en" ? "selected" : ""}>English (EN)</option>
+          <option value="ru" ${curLang === "ru" ? "selected" : ""}>Русский (RU)</option>
+          <option value="kz" ${curLang === "kz" ? "selected" : ""}>Қазақша (KZ)</option>
+        </select>
+      </div>
+      <div class="st-row">
+        <span>${tr("summon_label")}</span>
         <select id="stSummonKey" class="st-input" style="width:155px;">
           <option value="ShiftRight" ${curSummon === "ShiftRight" ? "selected" : ""}>Right Shift</option>
           <option value="ControlRight" ${curSummon === "ControlRight" ? "selected" : ""}>Right Ctrl</option>
           <option value="AltRight" ${curSummon === "AltRight" ? "selected" : ""}>Right Alt</option>
         </select>
       </div>
-      <div class="st-hint">
-        Нажмите <b>Right Shift</b> или <b>Right Ctrl</b> — таймер подсветится белой рамкой и перехватит кнопки: <b>Space</b> (Старт/Пауза), <b>R</b> (Сброс), <b>M</b> (Режим), <b>S</b> (Размер), <b>Esc</b> (Выход).
-      </div>
+      <div class="st-hint">${tr("hint_html")}</div>
       <div>
-        <div style="color:#A1A1AA;margin-bottom:4px;">Пресеты большого режима (мин, через запятую):</div>
+        <div style="color:#A1A1AA;margin-bottom:4px;">${tr("presets_label")}</div>
         <input id="stPresets" class="st-input" type="text" value="${presetStr}" />
       </div>
       <div class="st-row">
-        <span>Прозрачность (${Math.round(state.opacity * 100)}%):</span>
+        <span>${tr("opacity_label")} (${Math.round(state.opacity * 100)}%):</span>
         <input id="stOpacity" type="range" min="20" max="100" value="${Math.round(state.opacity * 100)}" style="width:160px;" />
       </div>
       <div class="st-row">
-        <span>Звуковой сигнал:</span>
-        <button class="btn" id="stTestSound">Проверить звук</button>
+        <span>${tr("sound_label")}</span>
+        <button class="btn" id="stTestSound">${tr("test_sound")}</button>
       </div>
       <div class="st-row" style="margin-top:4px;">
-        <button class="btn" id="stOpenPro" style="border:1px solid #52525B;color:#FAFAFA;">✨ Версия Plus (PRO)</button>
-        <button class="btn primary" id="stSaveBtn" style="flex:1;height:30px;">Сохранить</button>
+        <button class="btn" id="stOpenPro" style="border:1px solid #52525B;color:#FAFAFA;">${tr("pro_btn")}</button>
+        <button class="btn primary" id="stSaveBtn" style="flex:1;height:30px;">${tr("save_btn")}</button>
       </div>
     `;
     settingsModalEl.classList.add("open");
@@ -627,6 +735,12 @@
     settingsModalEl.querySelector("#stCloseX").onclick = () => {
       settingsOpen = false;
       settingsModalEl.classList.remove("open");
+    };
+    settingsModalEl.querySelector("#stLang").onchange = (ev) => {
+      const nextLang = ev.target.value;
+      state.lang = nextLang;
+      sendMsg({ type: "PATCH_STATE", patch: { lang: nextLang } });
+      openSettingsModal();
     };
     settingsModalEl.querySelector("#stTestSound").onclick = () => playWebAlarm();
     settingsModalEl.querySelector("#stOpenPro").onclick = () => {
@@ -642,9 +756,11 @@
       const raw = settingsModalEl.querySelector("#stPresets").value.replace(/;/g, ",").split(",");
       const parsed = raw.map((x) => parseInt(x.trim(), 10)).filter((n) => !isNaN(n) && n > 0 && n <= 999).slice(0, 6);
       const summonVal = settingsModalEl.querySelector("#stSummonKey").value;
+      const langVal = settingsModalEl.querySelector("#stLang").value;
       sendMsg({
         type: "PATCH_STATE",
         patch: {
+          lang: langVal,
           presets: parsed.length ? parsed : [5, 15, 25, 45, 60],
           hotkeys: { ...(state.hotkeys || {}), summon: summonVal }
         }
@@ -659,24 +775,32 @@
     e.stopPropagation();
     const ver = state.appVersion || "1.2.0";
     const exp = String(state.exportBuild || 2).padStart(2, "0");
+    const curLang = (state.lang && I18N[state.lang]) ? state.lang : detectDefaultLang();
     ctxMenuEl.innerHTML = `
-      <div class="ctx-meta">Jelly Timer v${ver} (Exp #${exp})</div>
+      <div class="ctx-meta" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Jelly Timer v${ver} (#${exp})</span>
+        <span style="display:inline-flex;gap:3px;">
+          <button class="btn" data-ctx="lang_en" style="padding:1px 5px;font-size:10px;${curLang==='en'?'color:#FAFAFA;background:rgba(255,255,255,0.16);':''}">EN</button>
+          <button class="btn" data-ctx="lang_ru" style="padding:1px 5px;font-size:10px;${curLang==='ru'?'color:#FAFAFA;background:rgba(255,255,255,0.16);':''}">RU</button>
+          <button class="btn" data-ctx="lang_kz" style="padding:1px 5px;font-size:10px;${curLang==='kz'?'color:#FAFAFA;background:rgba(255,255,255,0.16);':''}">KZ</button>
+        </span>
+      </div>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" data-ctx="mode_timer"><span>Таймер</span><span>${state.mode === "timer" ? "✓" : ""}</span></button>
-      <button class="ctx-item" data-ctx="mode_sw"><span>Секундомер</span><span>${state.mode === "stopwatch" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="mode_timer"><span>${tr("timer")}</span><span>${state.mode === "timer" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="mode_sw"><span>${tr("stopwatch")}</span><span>${state.mode === "stopwatch" ? "✓" : ""}</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" data-ctx="open_settings"><span>Настройки (Клавиши, пресеты)...</span><span>⚙</span></button>
+      <button class="ctx-item" data-ctx="open_settings"><span>${tr("ctx_settings")}</span><span>⚙</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" data-ctx="size_mini"><span>Размер: Мини</span><span>${state.sizeMode === "mini" ? "✓" : ""}</span></button>
-      <button class="ctx-item" data-ctx="size_medium"><span>Размер: Средний</span><span>${state.sizeMode === "medium" ? "✓" : ""}</span></button>
-      <button class="ctx-item" data-ctx="size_large"><span>Размер: Большой</span><span>${state.sizeMode === "large" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="size_mini"><span>${tr("ctx_size_mini")}</span><span>${state.sizeMode === "mini" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="size_medium"><span>${tr("ctx_size_med")}</span><span>${state.sizeMode === "medium" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="size_large"><span>${tr("ctx_size_large")}</span><span>${state.sizeMode === "large" ? "✓" : ""}</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" data-ctx="th_graphite"><span>Тема: Тёмный графит</span><span>${state.themeKey === "graphite" ? "✓" : ""}</span></button>
-      <button class="ctx-item" data-ctx="th_warm_espresso"><span>Тема: Тёплый эспрессо</span><span>${state.themeKey === "warm_espresso" ? "✓" : ""}</span></button>
-      <button class="ctx-item" data-ctx="th_soft_sage"><span>Тема: Мягкий шалфей</span><span>${state.themeKey === "soft_sage" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="th_graphite"><span>${tr("ctx_th_graphite")}</span><span>${state.themeKey === "graphite" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="th_warm_espresso"><span>${tr("ctx_th_espresso")}</span><span>${state.themeKey === "warm_espresso" ? "✓" : ""}</span></button>
+      <button class="ctx-item" data-ctx="th_soft_sage"><span>${tr("ctx_th_sage")}</span><span>${state.themeKey === "soft_sage" ? "✓" : ""}</span></button>
       <div class="ctx-sep"></div>
       <button class="ctx-item pro" data-ctx="open_pro"><span>✨ Jelly Timer Plus (PRO)</span><span>→</span></button>
-      <button class="ctx-item" data-ctx="hide"><span>Скрыть на вкладке</span><span></span></button>
+      <button class="ctx-item" data-ctx="hide"><span>${tr("ctx_hide")}</span><span></span></button>
     `;
     const mw = 235;
     const mh = 340;
@@ -693,7 +817,8 @@
     if (!item) return;
     const act = item.getAttribute("data-ctx");
     closeContextMenu();
-    if (act === "mode_timer") sendMsg({ type: "SWITCH_MODE", mode: "timer" });
+    if (act.startsWith("lang_")) sendMsg({ type: "PATCH_STATE", patch: { lang: act.replace("lang_", "") } });
+    else if (act === "mode_timer") sendMsg({ type: "SWITCH_MODE", mode: "timer" });
     else if (act === "mode_sw") sendMsg({ type: "SWITCH_MODE", mode: "stopwatch" });
     else if (act === "open_settings") openSettingsModal();
     else if (act.startsWith("size_")) sendMsg({ type: "PATCH_STATE", patch: { sizeMode: act.replace("size_", "") } });

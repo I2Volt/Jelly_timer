@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jelly Timer &amp; Jelly Timer Plus — Floating Timer &amp; Stopwatch</title>
+  <meta name="description" content="Minimalist always-on-top floating timer and stopwatch with magnetic edge-snap, spring peel-off physics, and keyboard focus without leaving your active window." />
+  <link rel="icon" type="image/png" href="assets/jelly_timer.png" />
+  <style>
+    :root {
+      --bg-page: #111113;
+      --bg-surface: #18181b;
+      --bg-elevated: #202024;
+      --bg-btn: rgba(255, 255, 255, 0.06);
+      --bg-btn-hover: rgba(255, 255, 255, 0.12);
+      --border: #2e2e34;
+      --border-strong: #3f3f46;
+      --text: #fafafa;
+      --text-secondary: #d4d4d8;
+      --muted: #a1a1aa;
+      --dim: #71717a;
+      --primary-bg: #f4f4f5;
+      --primary-fg: #18181b;
+      --radius-card: 14px;
+      --radius-btn: 7px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 20px 72px;
+    }
+
+    /* Top Instrument Bar — matches widget top-row geometry */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(24, 24, 27, 0.92);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-card);
+      padding: 10px 14px;
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand img {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: block;
+    }
+
+    .brand-title {
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.2px;
+      color: var(--text);
+    }
+
+    .brand-ver {
+      font-size: 11px;
+      color: var(--dim);
+      font-variant-numeric: tabular-nums;
+      padding-left: 6px;
+      border-left: 1px solid var(--border);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill-group {
+      display: inline-flex;
+      background: #141417;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .pill-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .pill-btn:hover {
+      color: var(--text);
+    }
+
+    .pill-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+
+    .ui-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-btn);
+      background: var(--bg-btn);
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 13px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .ui-btn:hover {
+      background: var(--bg-btn-hover);
+      color: var(--text);
+    }
+
+    .ui-btn.primary {
+      background: var(--primary-bg);
+      color: var(--primary-fg);
+      border-color: var(--primary-bg);
+    }
+
+    .ui-btn.primary:hover {
+      background: #ffffff;
+    }
+
+    /* Hero section */
+    .hero-head {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .hero-head h1 {
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -0.6px;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .hero-head p {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 680px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    /* Interactive Workspace Sandbox */
+    .sandbox-frame {
+      position: relative;
+      height: 330px;
+      background: #141417;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      margin-bottom: 32px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .sandbox-bar {
+      height: 34px;
+      background: #18181b;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .sandbox-grid {
+      position: absolute;
+      inset: 34px 0 0 0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 32px 32px;
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .sandbox-doc-lines {
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0.55;
+    }
+
+    .sandbox-doc-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    .sandbox-doc-line {
+      height: 8px;
+      border-radius: 4px;
+      background: #27272a;
+    }
+
+    .sandbox-hint-pill {
+      align-self: flex-start;
+      background: rgba(24, 24, 27, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .snap-preview {
+      position: absolute;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.45);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+
+    .snap-preview.active {
+      opacity: 1;
+    }
+
+    /* Live Interactive Jelly Widget inside Sandbox */
+    .jelly-card {
+      position: absolute;
+      background: rgba(24, 24, 27, 0.92);
+      border: 1px solid #3f3f46;
+      border-radius: 14px;
+      padding: 10px 10px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: grab;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.48);
+      transform-origin: center center;
+      z-index: 10;
+    }
+
+    .jelly-card:active {
+      cursor: grabbing;
+    }
+
+    .jelly-card.summoned {
+      border: 1.8px solid rgba(244, 244, 245, 0.95);
+    }
+
+    .jw-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .jw-btn {
+      border: none;
+      outline: none;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #a1a1aa;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 8px;
+      height: 22px;
+    }
+
+    .jw-btn:hover {
+      background: rgba(255, 255, 255, 0.13);
+      color: #fafafa;
+    }
+
+    .jw-btn.primary {
+      background: #f4f4f5;
+      color: #18181b;
+      height: 26px;
+      padding: 0 18px;
+    }
+
+    .jw-btn.primary:hover {
+      background: #ffffff;
+    }
+
+    .jw-time {
+      font-weight: 600;
+      font-size: 32px;
+      color: #fafafa;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      cursor: text;
+    }
+
+    .jw-progress {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 4px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .jw-progress-fill {
+      height: 100%;
+      background: rgba(244, 244, 245, 0.78);
+      width: 100%;
+    }
+
+    /* Section blocks */
+    .section {
+      margin-bottom: 36px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .section-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .section-header span {
+      font-size: 12px;
+      color: var(--dim);
+    }
+
+    /* Two-column media showcase */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 16px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .panel-tag {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .media-box {
+      width: 100%;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: #0d0d10;
+      margin-bottom: 10px;
+    }
+
+    .media-box img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .panel-desc {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    /* Technical Spec Table */
+    .spec-table-wrap {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      background: #151518;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    td.col-title {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    td.col-val {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.col-pro {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Editions / Licensing Block */
+    .editions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .edition-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .edition-card.pro-card {
+      border-color: #52525b;
+      background: #1a1a1f;
+    }
+
+    .ed-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .ed-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .ed-price {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ed-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .ed-list li::before {
+      content: "— ";
+      color: var(--dim);
+    }
+
+    /* Legal & Compliance Footer (Required for Lemon Squeezy verification) */
+    .legal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .legal-card {
+      background: #141417;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .legal-card h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .legal-card p {
+      font-size: 11.5px;
+      color: var(--dim);
+      line-height: 1.5;
+    }
+
+    .footer-meta {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11.5px;
+      color: var(--dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 640px) {
+      .media-grid { grid-template-columns: 1fr; }
+      .hero-head h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- Top Instrument Bar -->
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/jelly_timer_pro.png" alt="Jelly Timer icon" />
+        <span class="brand-title">Jelly Timer</span>
+        <span class="brand-ver" id="verLabel">v1.2.0 • Exp #05</span>
+      </div>
+      <div class="topbar-right">
+        <div class="pill-group" role="group" aria-label="Language switcher">
+          <button class="pill-btn active" data-lang="en">EN</button>
+          <button class="pill-btn" data-lang="ru">RU</button>
+          <button class="pill-btn" data-lang="kz">KZ</button>
+        </div>
+        <a class="ui-btn" href="https://github.com/I2Volt/Jelly_timer" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero-head">
+      <h1 data-i18n="hero_title">Floating timer &amp; stopwatch that stays out of your way.</h1>
+      <p data-i18n="hero_sub">
+        Built with a dark matte graphite surface, magnetic screen edges, elastic spring peel-off physics, and keyboard focus via Right Shift — so you never lose your typing cursor or active tab.
+      </p>
+      <div class="hero-actions">
+        <a class="ui-btn primary" id="heroProBtn" href="#editions" data-i18n="cta_pro">Get Jelly Timer Plus (PRO)</a>
+        <a class="ui-btn" href="https://github.com/I2Volt/Jelly_timer/releases" target="_blank" rel="noopener" data-i18n="cta_free">Download Free Desktop / Extension</a>
+      </div>
+    </section>
+
+    <!-- Interactive Live Sandbox -->
+    <section class="sandbox-frame" id="sandboxFrame">
+      <div class="sandbox-bar">
+        <span data-i18n="sandbox_title">Interactive Preview — Drag the timer away from the edge or press Right Shift</span>
+        <span id="sandboxStatus">Docked: Right Edge • 60 FPS Spring</span>
+      </div>
+      <div class="sandbox-grid">
+        <div class="sandbox-doc-lines">
+          <div class="sandbox-doc-title">workspace / focus_session.md</div>
+          <div class="sandbox-doc-line" style="width: 92%;"></div>
+          <div class="sandbox-doc-line" style="width: 78%;"></div>
+          <div class="sandbox-doc-line" style="width: 85%;"></div>
+          <div class="sandbox-doc-line" style="width: 60%;"></div>
+        </div>
+        <div class="sandbox-hint-pill" data-i18n="sandbox_hint">
+          Try: Drag widget to peel off edge • Double-click digits to edit • Press Right Shift + Space
+        </div>
+      </div>
+
+      <div class="snap-preview" id="snapPreview"></div>
+
+      <!-- Actual Interactive Jelly Widget -->
+      <div class="jelly-card" id="liveWidget" style="width:284px;height:138px;">
+        <div class="jw-row">
+          <button class="jw-btn" id="jwModeBtn">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+            <span id="jwModeText">Timer</span>
+          </button>
+          <div style="display:flex;gap:4px;">
+            <button class="jw-btn" id="jwSizeBtn" title="Cycle Size" style="width:22px;padding:0;">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="jw-time" id="jwTime">25:00</div>
+        <div class="jw-row" style="justify-content:center;gap:6px;">
+          <button class="jw-btn primary" id="jwPlayBtn">Start</button>
+          <button class="jw-btn" id="jwResetBtn" style="height:26px;padding:0 9px;">Reset</button>
+        </div>
+        <div class="jw-progress"><div class="jw-progress-fill" id="jwProg"></div></div>
+      </div>
+    </section>
+
+    <!-- Two Workflows: Browser Extension vs Desktop App -->
+    <section class="section">
+      <div class="section-header">
+        <h2 data-i18n="sec_workflows">Two Native Environments</h2>
+        <span data-i18n="sec_workflows_sub">Identical physics, tailored for Browser and OS</span>
+      </div>
+      <div class="media-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title" data-i18n="wf_ext_title">1. Browser Extension (Chrome / Edge / Firefox)</span>
+            <span class="panel-tag">Shadow DOM • Cross-Tab Sync</span>
+          </div>
+          <div class="media-box">
+            <img src="assets/demo_extension.gif" alt="Jelly Timer Browser Extension Demo" loading="lazy" />
+          </div>
+          <p class="panel-desc" data-i18n="wf_ext_desc">
+            Injected cleanly via isolated Shadow DOM. Stays synchronized down to the tenth of a second as you switch between documentation, code reviews, and articles.
+          </p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title" data-i18n="wf_desk_title">2. Desktop App &amp; Plus (Windows &amp; macOS)</span>
+            <span class="panel-tag">Native Win32 / Cocoa • Topmost</span>
+          </div>
+          <div class="media-box">
+            <img src="assets/demo_desktop.gif" alt="Jelly Timer Desktop App Demo" loading="lazy" />
+          </div>
+          <p class="panel-desc" data-i18n="wf_desk_desc">
+            Standalone native overlay that floats above IDEs, writing tools, spreadsheets, and full-screen workspaces without stealing window focus.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Specification Comparison -->
+    <section class="section">
+      <div class="section-header">
+        <h2 data-i18n="sec_specs">Specification Matrix</h2>
+        <span>v1.2.0 • EN / RU / KZ</span>
+      </div>
+      <div class="spec-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="th_cap">Capability</th>
+              <th data-i18n="th_ext">Browser Extension</th>
+              <th data-i18n="th_free">Desktop Free</th>
+              <th data-i18n="th_pro">Jelly Timer Plus (PRO)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-title" data-i18n="row_1">Magnetic edge-snap &amp; spring peel-off physics (60 FPS)</td>
+              <td class="col-val">Included</td>
+              <td class="col-val">Included</td>
+              <td class="col-pro">Included</td>
+            </tr>
+            <tr>
+              <td class="col-title" data-i18n="row_2">Writer-friendly focus key (Right Shift / Right Ctrl)</td>
+              <td class="col-val">Included</td>
+              <td class="col-val">Included</td>
+              <td class="col-pro">Included</td>
+            </tr>
+            <tr>
+              <td class="col-title" data-i18n="row_3">Interface languages (English, Русский, Қазақша)</td>
+              <td class="col-val">EN / RU / KZ</td>
+              <td class="col-val">EN / RU / KZ</td>
+              <td class="col-pro">EN / RU / KZ</td>
+            </tr>
+            <tr>
+              <td class="col-title" data-i18n="row_4">Floats over all OS applications outside the browser</td>
+              <td class="col-val">Browser tabs only</td>
+              <td class="col-val">Windows &amp; macOS</td>
+              <td class="col-pro">Windows &amp; macOS</td>
+            </tr>
+            <tr>
+              <td class="col-title" data-i18n="row_5">Pomodoro cycles (auto work/break) &amp; Flowtime (1/5 smart break)</td>
+              <td class="col-val">—</td>
+              <td class="col-val">—</td>
+              <td class="col-pro">Included</td>
+            </tr>
+            <tr>
+              <td class="col-title" data-i18n="row_6">Auto-Focus by active window title (auto-resume in IDE / Docs)</td>
+              <td class="col-val">—</td>
+              <td class="col-val">—</td>
+              <td class="col-pro">Included</td>
+            </tr>
+            <tr>
+              <td class="col-title" data-i18n="row_7">7-day focus analytics chart &amp; top active applications log</td>
+              <td class="col-val">—</td>
+              <td class="col-val">—</td>
+              <td class="col-pro">Included</td>
+            </tr>
+            <tr>
+              <td class="col-title" data-i18n="row_8">Synthesized acoustic chimes (Chime chord &amp; 528 Hz Zen tone)</td>
+              <td class="col-val">Standard</td>
+              <td class="col-val">Standard</td>
+              <td class="col-pro">3 Acoustic Profiles + Plus Themes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Editions & Purchase -->
+    <section class="section" id="editions">
+      <div class="section-header">
+        <h2 data-i18n="sec_editions">Editions &amp; Licensing</h2>
+        <span data-i18n="sec_editions_sub">No subscriptions — one-time license</span>
+      </div>
+      <div class="editions-grid">
+        <div class="edition-card">
+          <div>
+            <div class="ed-top">
+              <span class="ed-name" data-i18n="ed_free_name">Jelly Timer (Standard)</span>
+              <span class="ed-price">$0</span>
+            </div>
+            <ul class="ed-list">
+              <li data-i18n="ed_free_1">Browser Extension (Chrome, Edge, Firefox) with cross-tab sync</li>
+              <li data-i18n="ed_free_2">Desktop Free app for Windows (.exe) and macOS (.app)</li>
+              <li data-i18n="ed_free_3">Countdown timer &amp; tenth-of-a-second stopwatch</li>
+              <li data-i18n="ed_free_4">3 sizes (Mini, Medium, Large) &amp; 3 matte dark themes</li>
+            </ul>
+          </div>
+          <a class="ui-btn" href="https://github.com/I2Volt/Jelly_timer/releases" target="_blank" rel="noopener" data-i18n="ed_free_btn">
+            Download Free Builds on GitHub
+          </a>
+        </div>
+
+        <div class="edition-card pro-card">
+          <div>
+            <div class="ed-top">
+              <span class="ed-name">Jelly Timer Plus (PRO)</span>
+              <span class="ed-price">$9 <span style="font-size:11.5px;color:var(--muted);font-weight:400;">/ lifetime</span></span>
+            </div>
+            <ul class="ed-list">
+              <li data-i18n="ed_pro_1">Standalone Desktop Plus builds for Windows &amp; macOS</li>
+              <li data-i18n="ed_pro_2">Pomodoro intervals &amp; uninterrupted Flowtime (1/5 break calculation)</li>
+              <li data-i18n="ed_pro_3">Automatic start/pause triggered by active work window titles</li>
+              <li data-i18n="ed_pro_4">Local 7-day focus bar chart, session counter &amp; top apps tracker</li>
+              <li data-i18n="ed_pro_5">528 Hz Zen &amp; Harmonic Chime audio + Obsidian &amp; Slate Titanium themes</li>
+            </ul>
+          </div>
+          <a class="ui-btn primary" id="buyProLink" href="https://github.com/I2Volt/Jelly_timer" target="_blank" rel="noopener" data-i18n="ed_pro_btn">
+            Get Jelly Timer Plus (PRO) →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Legal, Refund & Privacy Policies (Required for Merchant of Record / Lemon Squeezy Review) -->
+    <section class="legal-grid">
+      <div class="legal-card">
+        <h4 data-i18n="leg_terms_t">Terms of Service &amp; License</h4>
+        <p data-i18n="leg_terms_p">
+          Jelly Timer Plus (PRO) grants a perpetual, non-exclusive license to install and use the software on your personal Windows and macOS devices, including minor v1.x updates.
+        </p>
+      </div>
+      <div class="legal-card">
+        <h4 data-i18n="leg_refund_t">14-Day Refund Policy</h4>
+        <p data-i18n="leg_refund_p">
+          If Jelly Timer Plus does not fit your workflow or experiences technical issues on your system, request a full refund within 14 days of purchase by emailing support.
+        </p>
+      </div>
+      <div class="legal-card">
+        <h4 data-i18n="leg_priv_t">Privacy Policy (100% Local)</h4>
+        <p data-i18n="leg_priv_p">
+          Both the Browser Extension and Desktop applications store all timers, settings, and focus statistics strictly locally on your device. Zero telemetry or personal data is collected.
+        </p>
+      </div>
+    </section>
+
+    <footer class="footer-meta">
+      <span>© 2026 I2Volt • Jelly Timer Project (<a href="mailto:ivolt5220@gmail.com" style="color:var(--muted);">ivolt5220@gmail.com</a>)</span>
+      <span id="remoteSyncNote">Build: v1.2.0 • Export #05</span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const DICT = {
+        en: {
+          hero_title: "Floating timer & stopwatch that stays out of your way.",
+          hero_sub: "Built with a dark matte graphite surface, magnetic screen edges, elastic spring peel-off physics, and keyboard focus via Right Shift — so you never lose your typing cursor or active tab.",
+          cta_pro: "Get Jelly Timer Plus (PRO)",
+          cta_free: "Download Free Desktop / Extension",
+          sandbox_title: "Interactive Preview — Drag the timer away from the edge or press Right Shift",
+          sandbox_hint: "Try: Drag widget to peel off edge • Double-click digits to edit • Press Right Shift + Space",
+          sec_workflows: "Two Native Environments",
+          sec_workflows_sub: "Identical physics, tailored for Browser and OS",
+          wf_ext_title: "1. Browser Extension (Chrome / Edge / Firefox)",
+          wf_ext_desc: "Injected cleanly via isolated Shadow DOM. Stays synchronized down to the tenth of a second as you switch between documentation, code reviews, and articles.",
+          wf_desk_title: "2. Desktop App & Plus (Windows & macOS)",
+          wf_desk_desc: "Standalone native overlay that floats above IDEs, writing tools, spreadsheets, and full-screen workspaces without stealing window focus.",
+          sec_specs: "Specification Matrix",
+          th_cap: "Capability",
+          th_ext: "Browser Extension",
+          th_free: "Desktop Free",
+          th_pro: "Jelly Timer Plus (PRO)",
+          row_1: "Magnetic edge-snap & spring peel-off physics (60 FPS)",
+          row_2: "Writer-friendly focus key (Right Shift / Right Ctrl)",
+          row_3: "Interface languages (English, Русский, Қазақша)",
+          row_4: "Floats over all OS applications outside the browser",
+          row_5: "Pomodoro cycles (auto work/break) & Flowtime (1/5 smart break)",
+          row_6: "Auto-Focus by active window title (auto-resume in IDE / Docs)",
+          row_7: "7-day focus analytics chart & top active applications log",
+          row_8: "Synthesized acoustic chimes (Chime chord & 528 Hz Zen tone)",
+          sec_editions: "Editions & Licensing",
+          sec_editions_sub: "No subscriptions — one-time license",
+          ed_free_name: "Jelly Timer (Standard)",
+          ed_free_1: "Browser Extension (Chrome, Edge, Firefox) with cross-tab sync",
+          ed_free_2: "Desktop Free app for Windows (.exe) and macOS (.app)",
+          ed_free_3: "Countdown timer & tenth-of-a-second stopwatch",
+          ed_free_4: "3 sizes (Mini, Medium, Large) & 3 matte dark themes",
+          ed_free_btn: "Download Free Builds on GitHub",
+          ed_pro_1: "Standalone Desktop Plus builds for Windows & macOS",
+          ed_pro_2: "Pomodoro intervals & uninterrupted Flowtime (1/5 break calculation)",
+          ed_pro_3: "Automatic start/pause triggered by active work window titles",
+          ed_pro_4: "Local 7-day focus bar chart, session counter & top apps tracker",
+          ed_pro_5: "528 Hz Zen & Harmonic Chime audio + Obsidian & Slate Titanium themes",
+          ed_pro_btn: "Get Jelly Timer Plus (PRO) →",
+          leg_terms_t: "Terms of Service & License",
+          leg_terms_p: "Jelly Timer Plus (PRO) grants a perpetual, non-exclusive license to install and use the software on your personal Windows and macOS devices, including minor v1.x updates.",
+          leg_refund_t: "14-Day Refund Policy",
+          leg_refund_p: "If Jelly Timer Plus does not fit your workflow or experiences technical issues on your system, request a full refund within 14 days of purchase by emailing support.",
+          leg_priv_t: "Privacy Policy (100% Local)",
+          leg_priv_p: "Both the Browser Extension and Desktop applications store all timers, settings, and focus statistics strictly locally on your device. Zero telemetry or personal data is collected.",
+          w_timer: "Timer",
+          w_sw: "Stopwatch",
+          w_start: "Start",
+          w_pause: "Pause",
+          w_reset: "Reset"
+        },
+        ru: {
+          hero_title: "Плавающий таймер и секундомер, который не мешает работать.",
+          hero_sub: "Тёмно-матовый графитовый корпус, магнитные края экрана, упругая физика отрыва и мгновенный вызов клавишей Right Shift — без потери курсора при печати и переключении окон.",
+          cta_pro: "Получить Jelly Timer Plus (PRO)",
+          cta_free: "Скачать бесплатную версию / Расширение",
+          sandbox_title: "Интерактивное превью — Потяните таймер мышкой от края или нажмите Right Shift",
+          sandbox_hint: "Попробуйте: Оторвите виджет от края • Дважды кликните по цифрам • Нажмите Right Shift + Space",
+          sec_workflows: "Два нативных формата",
+          sec_workflows_sub: "Единая физика для браузера и операционной системы",
+          wf_ext_title: "1. Браузерное расширение (Chrome / Edge / Firefox)",
+          wf_ext_desc: "Изолированный Shadow DOM без влияния на верстку сайтов. Синхронизирует отсчёт между всеми открытыми вкладками с точностью до десятых долей секунды.",
+          wf_desk_title: "2. Десктопное приложение и Plus (Windows & macOS)",
+          wf_desk_desc: "Автономная нативная программа поверх любых окон — IDE, текстовых редакторов, таблиц и документов без перехвата фокуса клавиатуры.",
+          sec_specs: "Техническое сравнение версий",
+          th_cap: "Возможность",
+          th_ext: "Расширение браузера",
+          th_free: "Десктоп Free",
+          th_pro: "Jelly Timer Plus (PRO)",
+          row_1: "Магнитные края и упругая желейная физика отрыва (60 FPS)",
+          row_2: "Быстрый фокус без отрыва от печати (Right Shift / Right Ctrl)",
+          row_3: "Языки интерфейса (English, Русский, Қазақша)",
+          row_4: "Работа поверх всех программ ОС вне браузера",
+          row_5: "Циклы Помодоро и режим свободного потока Flowtime (отдых 1/5)",
+          row_6: "Авто-фокус по заголовку активного окна (авто-старт в IDE / Docs)",
+          row_7: "График статистики фокуса за 7 дней и учёт активных программ",
+          row_8: "Синтезатор звуковых сигналов (аккорд Chime и тон 528 Гц Zen)",
+          sec_editions: "Версии и лицензия",
+          sec_editions_sub: "Без подписок — разовая покупка навсегда",
+          ed_free_name: "Jelly Timer (Standard)",
+          ed_free_1: "Расширение для браузера с синхронизацией между вкладками",
+          ed_free_2: "Бесплатная десктопная программа для Windows (.exe) и macOS (.app)",
+          ed_free_3: "Таймер обратного отсчёта и секундомер с десятыми долями секунды",
+          ed_free_4: "3 размера (Мини, Средний, Большой) и 3 тёмные матовые темы",
+          ed_free_btn: "Скачать бесплатные сборки на GitHub",
+          ed_pro_1: "Автономные сборки Desktop Plus для Windows и macOS",
+          ed_pro_2: "Интервалы Помодоро и режим Flowtime (умный перерыв 1/5 от работы)",
+          ed_pro_3: "Автоматический старт и пауза при открытии рабочих программ",
+          ed_pro_4: "Локальный график фокуса за 7 дней, счётчик сессий и топ окон",
+          ed_pro_5: "Звуки 528 Гц Zen и Chime + эксклюзивные темы Оникс и Титан",
+          ed_pro_btn: "Перейти к Jelly Timer Plus (PRO) →",
+          leg_terms_t: "Условия использования и лицензия",
+          leg_terms_p: "Лицензия Jelly Timer Plus (PRO) предоставляется бессрочно для использования на ваших личных компьютерах Windows и macOS, включая все обновления ветки v1.x.",
+          leg_refund_t: "Гарантия возврата 14 дней",
+          leg_refund_p: "Если программа не подошла под ваш рабочий процесс или возникли технические сложности, мы вернём 100% оплаты в течение 14 дней по запросу на почту.",
+          leg_priv_t: "Конфиденциальность (100% локально)",
+          leg_priv_p: "Расширение и десктопные приложения хранят настройки и статистику исключительно локально на вашем устройстве. Никакая телеметрия не собирается.",
+          w_timer: "Таймер",
+          w_sw: "Секундомер",
+          w_start: "Старт",
+          w_pause: "Пауза",
+          w_reset: "Сброс"
+        },
+        kz: {
+          hero_title: "Жұмысыңызға кедергі келтірмейтін қалқымалы таймер мен секундөлшегіш.",
+          hero_sub: "Күңгірт графитті дизайн, магнитті экран жиектері, серпімді физика және Right Shift арқылы жылдам басқару — мәтін теруді немесе белсенді терезені жоғалтпай уақытты бақылаңыз.",
+          cta_pro: "Jelly Timer Plus (PRO) алу",
+          cta_free: "Тегін нұсқасын / Кеңейтімді жүктеу",
+          sandbox_title: "Интерактивті демо — Таймерді жиектен тартып көріңіз немесе Right Shift басыңыз",
+          sandbox_hint: "Байқап көріңіз: Виджетті жиектен тартыңыз • Цифрларды екі рет басыңыз • Right Shift + Space",
+          sec_workflows: "Екі нативті формат",
+          sec_workflows_sub: "Браузер мен операциялық жүйеге арналған бірыңғай физика",
+          wf_ext_title: "1. Браузер кеңейтімі (Chrome / Edge / Firefox)",
+          wf_ext_desc: "Оқшауланған Shadow DOM арқылы жұмыс істейді. Барлық ашық қойындылар арасында уақытты секундтың оннан бір бөлігіне дейін синхрондайды.",
+          wf_desk_title: "2. Десктоп бағдарламасы және Plus (Windows & macOS)",
+          wf_desk_desc: "Кез келген терезенің (IDE, редакторлар, кестелер) үстінде тұратын дербес бағдарлама — пернетақта фокусын тартып алмайды.",
+          sec_specs: "Нұсқаларды техникалық салыстыру",
+          th_cap: "Мүмкіндік",
+          th_ext: "Браузер кеңейтімі",
+          th_free: "Десктоп Free",
+          th_pro: "Jelly Timer Plus (PRO)",
+          row_1: "Магнитті жиектер және серпімді физика (60 FPS)",
+          row_2: "Мәтін теруден қол үзбей басқару (Right Shift / Right Ctrl)",
+          row_3: "Интерфейс тілдері (English, Русский, Қазақша)",
+          row_4: "Браузерден тыс барлық ОЖ бағдарламаларының үстінде жұмыс істеу",
+          row_5: "Помодоро циклдері және Flowtime еркін ағын режимі (1/5 үзіліс)",
+          row_6: "Белсенді терезе атауы бойынша авто-фокус (IDE / Docs-та авто-қосылу)",
+          row_7: "7 күндік фокус статистикасы және белсенді бағдарламалар есебі",
+          row_8: "Дыбыстық синтезатор (Chime аккорды және 528 Гц Zen үні)",
+          sec_editions: "Нұсқалар мен лицензия",
+          sec_editions_sub: "Жазылымсыз — бір реттік төлем",
+          ed_free_name: "Jelly Timer (Standard)",
+          ed_free_1: "Қойындылар арасында синхрондалатын браузер кеңейтімі",
+          ed_free_2: "Windows (.exe) және macOS (.app) үшін тегін бағдарлама",
+          ed_free_3: "Кері санақ таймері және дәл секундөлшегіш",
+          ed_free_4: "3 өлшем (Мини, Орташа, Үлкен) және 3 күңгірт тақырып",
+          ed_free_btn: "GitHub-тан тегін жүктеп алу",
+          ed_pro_1: "Windows және macOS үшін дербес Desktop Plus жинақтары",
+          ed_pro_2: "Помодоро интервалдары және Flowtime режимі (1/5 ақылды үзіліс)",
+          ed_pro_3: "Жұмыс бағдарламаларын ашқанда автоматты іске қосу және кідірту",
+          ed_pro_4: "7 күндік фокус графигі, сессия есептегіші және топ терезелер",
+          ed_pro_5: "528 Гц Zen және Chime дыбыстары + Оникс пен Титан тақырыптары",
+          ed_pro_btn: "Jelly Timer Plus (PRO) алу →",
+          leg_terms_t: "Пайдалану шарттары мен лицензия",
+          leg_terms_p: "Jelly Timer Plus (PRO) лицензиясы жеке Windows және macOS құрылғыларыңызда мерзімсіз пайдалануға беріледі (барлық v1.x жаңартуларын қоса).",
+          leg_refund_t: "14 күндік қайтару кепілдігі",
+          leg_refund_p: "Егер бағдарлама жұмыс процесіңізге сәйкес келмесе, сатып алғаннан кейін 14 күн ішінде толық қайтаруды сұрай аласыз.",
+          leg_priv_t: "Құпиялылық саясаты (100% локалды)",
+          leg_priv_p: "Кеңейтім де, десктоп бағдарламасы да барлық деректерді тек құрылғыңызда сақтайды. Ешқандай жеке деректер жиналмайды.",
+          w_timer: "Таймер",
+          w_sw: "Секундөлшегіш",
+          w_start: "Бастау",
+          w_pause: "Кідірту",
+          w_reset: "Қалпына келтіру"
+        }
+      };
+
+      let curLang = "en";
+      const navLang = (navigator.language || "en").toLowerCase();
+      if (navLang.startsWith("kk") || navLang.startsWith("kz")) curLang = "kz";
+      else if (navLang.startsWith("ru")) curLang = "ru";
+
+      function applyLang(lang) {
+        curLang = DICT[lang] ? lang : "en";
+        document.documentElement.lang = curLang;
+        document.querySelectorAll(".pill-btn[data-lang]").forEach((b) => {
+          b.classList.toggle("active", b.getAttribute("data-lang") === curLang);
+        });
+        const d = DICT[curLang];
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          const k = el.getAttribute("data-i18n");
+          if (d[k]) el.textContent = d[k];
+        });
+        updateWidgetLabels();
+      }
+
+      document.querySelectorAll(".pill-btn[data-lang]").forEach((btn) => {
+        btn.addEventListener("click", () => applyLang(btn.getAttribute("data-lang")));
+      });
+
+      // Interactive Spring Sandbox
+      class Spring {
+        constructor(v, k = 340, d = 26) {
+          this.value = v;
+          this.target = v;
+          this.velocity = 0;
+          this.k = k;
+          this.d = d;
+        }
+        step(dt) {
+          dt = Math.min(dt, 0.04);
+          this.velocity += (this.target - this.value) * this.k * dt;
+          this.velocity *= Math.exp(-this.d * dt);
+          this.value += this.velocity * dt;
+        }
+        setImmediate(v) {
+          this.value = v;
+          this.target = v;
+          this.velocity = 0;
+        }
+      }
+
+      const frame = document.getElementById("sandboxFrame");
+      const card = document.getElementById("liveWidget");
+      const snapEl = document.getElementById("snapPreview");
+      const statusEl = document.getElementById("sandboxStatus");
+      const modeBtn = document.getElementById("jwModeBtn");
+      const modeTxt = document.getElementById("jwModeText");
+      const sizeBtn = document.getElementById("jwSizeBtn");
+      const timeEl = document.getElementById("jwTime");
+      const playBtn = document.getElementById("jwPlayBtn");
+      const resetBtn = document.getElementById("jwResetBtn");
+      const progEl = document.getElementById("jwProg");
+
+      let wMode = "timer";
+      let wRunning = false;
+      let wTotal = 25 * 60;
+      let wRem = 25 * 60;
+      let wSw = 0;
+      let wSizeIdx = 1;
+      const SIZES = [
+        { name: "Mini", w: 208, h: 66 },
+        { name: "Medium", w: 284, h: 138 },
+        { name: "Large", w: 328, h: 158 }
+      ];
+
+      const spX = new Spring(520, 360, 29);
+      const spY = new Spring(52, 360, 29);
+      const spW = new Spring(284, 320, 26);
+      const spH = new Spring(138, 320, 26);
+      const spSX = new Spring(1, 280, 16.5);
+      const spSY = new Spring(1, 280, 16.5);
+
+      let dockEdge = "right";
+      let dragging = false;
+      let offX = 0, offY = 0;
+      let detachEdge = null;
+      let anchX = 0, anchY = 0;
+      let summoned = false;
+
+      function updateWidgetLabels() {
+        const d = DICT[curLang];
+        modeTxt.textContent = wMode === "timer" ? d.w_timer : d.w_sw;
+        playBtn.textContent = wRunning ? d.w_pause : d.w_start;
+        resetBtn.textContent = d.w_reset;
+      }
+
+      function placeRightEdge(immediate) {
+        const fw = frame.clientWidth || 880;
+        const tx = Math.max(12, fw - spW.target - 12);
+        const ty = 52;
+        spX.target = tx;
+        spY.target = ty;
+        if (immediate) {
+          spX.setImmediate(tx);
+          spY.setImmediate(ty);
+        }
+      }
+
+      placeRightEdge(true);
+      window.addEventListener("resize", () => {
+        if (dockEdge === "right") placeRightEdge(false);
+      });
+
+      card.addEventListener("mousedown", (e) => {
+        if (e.target.closest("button") || e.target.tagName === "INPUT") return;
+        dragging = true;
+        const rect = frame.getBoundingClientRect();
+        offX = (e.clientX - rect.left) - spX.value;
+        offY = (e.clientY - rect.top) - spY.value;
+        if (dockEdge) {
+          detachEdge = dockEdge;
+          anchX = spX.value;
+          anchY = spY.value;
+        } else {
+          detachEdge = null;
+        }
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!dragging) return;
+        const rect = frame.getBoundingClientRect();
+        const rx = (e.clientX - rect.left) - offX;
+        const ry = Math.max(40, Math.min(frame.clientHeight - spH.value - 10, (e.clientY - rect.top) - offY));
+
+        if (detachEdge) {
+          const dx = rx - anchX;
+          const dy = ry - anchY;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 42) {
+            const r = dist / 42;
+            spX.setImmediate(anchX + dx * 0.25);
+            spY.setImmediate(anchY + dy * 0.25);
+            spSX.setImmediate(1 + r * 0.16);
+            spSY.setImmediate(1 - r * 0.10);
+            statusEl.textContent = `Elastic Tension: ${Math.round(r * 100)}%`;
+            return;
+          } else {
+            detachEdge = null;
+            dockEdge = null;
+            spSX.target = 1;
+            spSY.target = 1;
+            spSX.velocity -= 2.4;
+            spSY.velocity += 1.8;
+            statusEl.textContent = "Peel-Off Impulse Triggered";
+          }
+        }
+
+        spX.setImmediate( Math.max(10, Math.min(frame.clientWidth - spW.value - 10, rx)) );
+        spY.setImmediate(ry);
+
+        if (spX.value < 44) {
+          snapEl.style.left = "10px";
+          snapEl.style.top = `${spY.value}px`;
+          snapEl.style.width = `${spW.value}px`;
+          snapEl.style.height = `${spH.value}px`;
+          snapEl.classList.add("active");
+        } else if (spX.value + spW.value > frame.clientWidth - 44) {
+          snapEl.style.left = `${frame.clientWidth - spW.value - 10}px`;
+          snapEl.style.top = `${spY.value}px`;
+          snapEl.style.width = `${spW.value}px`;
+          snapEl.style.height = `${spH.value}px`;
+          snapEl.classList.add("active");
+        } else {
+          snapEl.classList.remove("active");
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (!dragging) return;
+        dragging = false;
+        snapEl.classList.remove("active");
+        if (detachEdge) {
+          spX.target = anchX;
+          spY.target = anchY;
+          spSX.target = 1;
+          spSY.target = 1;
+          detachEdge = null;
+          statusEl.textContent = "Docked • 60 FPS Spring";
+          return;
+        }
+        if (spX.value < 44) {
+          dockEdge = "left";
+          spX.target = 10;
+          spSX.velocity -= 2.0;
+          spSY.velocity += 1.5;
+          statusEl.textContent = "Docked: Left Edge";
+        } else if (spX.value + spW.value > frame.clientWidth - 44) {
+          dockEdge = "right";
+          spX.target = frame.clientWidth - spW.value - 10;
+          spSX.velocity -= 2.0;
+          spSY.velocity += 1.5;
+          statusEl.textContent = "Docked: Right Edge";
+        } else {
+          spX.target = spX.value;
+          spY.target = spY.value;
+          statusEl.textContent = "Floating Free";
+        }
+      });
+
+      playBtn.addEventListener("click", () => {
+        wRunning = !wRunning;
+        updateWidgetLabels();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        wRunning = false;
+        wRem = wTotal;
+        wSw = 0;
+        updateWidgetLabels();
+      });
+
+      modeBtn.addEventListener("click", () => {
+        wRunning = false;
+        wMode = wMode === "timer" ? "stopwatch" : "timer";
+        spSX.velocity += 1.2;
+        spSY.velocity -= 1.2;
+        updateWidgetLabels();
+      });
+
+      sizeBtn.addEventListener("click", () => {
+        wSizeIdx = (wSizeIdx + 1) % SIZES.length;
+        const sz = SIZES[wSizeIdx];
+        spW.target = sz.w;
+        spH.target = sz.h;
+        if (dockEdge === "right") {
+          spX.target = frame.clientWidth - sz.w - 10;
+        }
+        timeEl.style.fontSize = wSizeIdx === 0 ? "20px" : (wSizeIdx === 1 ? "32px" : "38px");
+      });
+
+      timeEl.addEventListener("dblclick", () => {
+        if (wMode !== "timer") return;
+        wRunning = false;
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.value = "15:00";
+        inp.style.cssText = "width:110px;background:#27272a;border:1px dashed #a1a1aa;border-radius:6px;color:#fafafa;font-size:26px;font-weight:600;text-align:center;outline:none;";
+        timeEl.innerHTML = "";
+        timeEl.appendChild(inp);
+        inp.focus();
+        inp.select();
+        const commit = () => {
+          const parts = inp.value.split(":").map((x) => parseInt(x, 10) || 0);
+          const sec = parts.length === 2 ? parts[0] * 60 + parts[1] : (parts[0] || 15) * 60;
+          wTotal = Math.max(10, sec);
+          wRem = wTotal;
+        };
+        inp.addEventListener("keydown", (ke) => {
+          if (ke.key === "Enter") { commit(); inp.blur(); }
+        });
+        inp.addEventListener("blur", commit);
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "ShiftRight" || e.code === "ControlRight") {
+          e.preventDefault();
+          summoned = !summoned;
+          card.classList.toggle("summoned", summoned);
+          spSX.velocity += summoned ? 1.5 : -1.1;
+          spSY.velocity += summoned ? -1.5 : 1.1;
+          statusEl.textContent = summoned ? "Focus Summoned (Space / R / M)" : "Focus Released";
+        } else if (summoned && e.code === "Space") {
+          e.preventDefault();
+          wRunning = !wRunning;
+          updateWidgetLabels();
+        } else if (summoned && e.code === "KeyR") {
+          e.preventDefault();
+          wRunning = false;
+          wRem = wTotal;
+          wSw = 0;
+          updateWidgetLabels();
+        }
+      });
+
+      function fmt(sec) {
+        const t = Math.floor(sec);
+        const m = String(Math.floor(t / 60)).padStart(2, "0");
+        const s = String(t % 60).padStart(2, "0");
+        if (wMode === "stopwatch") {
+          const d = Math.floor((sec - t) * 10);
+          return `${m}:${s}.${d}`;
+        }
+        return `${m}:${s}`;
+      }
+
+      let lastT = performance.now();
+      function loop(now) {
+        const dt = (now - lastT) / 1000;
+        lastT = now;
+        if (wRunning) {
+          if (wMode === "timer") {
+            wRem = Math.max(0, wRem - dt);
+            if (wRem <= 0) wRunning = false;
+          } else {
+            wSw += dt;
+          }
+        }
+        if (!timeEl.querySelector("input")) {
+          timeEl.textContent = fmt(wMode === "timer" ? wRem : wSw);
+        }
+        progEl.style.width = wMode === "timer" ? `${(wRem / Math.max(1, wTotal)) * 100}%` : "100%";
+
+        spX.step(dt);
+        spY.step(dt);
+        spW.step(dt);
+        spH.step(dt);
+        spSX.step(dt);
+        spSY.step(dt);
+
+        card.style.left = `${spX.value.toFixed(1)}px`;
+        card.style.top = `${spY.value.toFixed(1)}px`;
+        card.style.width = `${spW.value.toFixed(1)}px`;
+        card.style.height = `${spH.value.toFixed(1)}px`;
+        card.style.transform = `scale(${spSX.value.toFixed(3)}, ${spSY.value.toFixed(3)})`;
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+
+      // Sync dynamic pro_landing_url from version_info.json
+      fetch("https://raw.githubusercontent.com/I2Volt/Jelly_timer/main/version_info.json", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((meta) => {
+          if (!meta) return;
+          const exp = String(meta.export_build || 5).padStart(2, "0");
+          document.getElementById("verLabel").textContent = `v${meta.app_version} • Exp #${exp}`;
+          document.getElementById("remoteSyncNote").textContent = `Build: v${meta.app_version} • Export #${exp} (${meta.build_date})`;
+          if (meta.pro_landing_url) {
+            document.getElementById("buyProLink").href = meta.pro_landing_url;
+          }
+        })
+        .catch(() => {});
+
+      applyLang(curLang);
+    })();
+  </script>
+</body>
+</html>

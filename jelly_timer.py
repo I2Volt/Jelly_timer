@@ -46,7 +46,7 @@ if IS_WIN:
 UI_FONT = "SF Pro Display" if IS_MAC else ("Ubuntu" if IS_LINUX else "Segoe UI")
 
 APP_VERSION = "1.2.0"
-EXPORT_BUILD = 4
+EXPORT_BUILD = 5
 BUILD_DATE = "2026-11-05"
 VERSION_LABEL = f"v{APP_VERSION} (Exp #{EXPORT_BUILD:02d} • {BUILD_DATE})"
 
@@ -712,7 +712,20 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(10)
 
-        title = QLabel("Горячие клавиши")
+        lang_row = QHBoxLayout()
+        lang_lbl = QLabel(tr_text(self.w.lang, "dlg_lang"))
+        lang_lbl.setStyleSheet("color: #FAFAFA; font-weight: 600;")
+        self.lang_combo = QComboBox()
+        self.lang_combo.setStyleSheet("background-color: #27272A; color: #FAFAFA; border: 1px solid #3F3F46; border-radius: 6px; padding: 4px 8px; font-size: 12px;")
+        for code_k, title_k in (("en", "English (EN)"), ("ru", "Русский (RU)"), ("kz", "Қазақша (KZ)")):
+            self.lang_combo.addItem(title_k, code_k)
+        self.lang_combo.setCurrentIndex({"en": 0, "ru": 1, "kz": 2}.get(self.w.lang, 1))
+        lang_row.addWidget(lang_lbl)
+        lang_row.addStretch()
+        lang_row.addWidget(self.lang_combo)
+        layout.addLayout(lang_row)
+
+        title = QLabel("Горячие клавиши / Hotkeys")
         title.setStyleSheet("font-size: 14px; font-weight: 600; color: #FAFAFA;")
         layout.addWidget(title)
 
@@ -856,6 +869,7 @@ class SettingsDialog(QDialog):
         self.w.save_config()
 
     def save_and_close(self):
+        self.w.lang = self.lang_combo.currentData()
         for k, btn in self.buttons.items():
             self.w.hotkeys[k] = {"vk": btn.vk_code, "name": btn.key_name}
         self.w.global_hotkeys = self.global_cb.isChecked()
@@ -923,6 +937,7 @@ class JellyTimerWidget(QWidget):
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
+        self.lang = detect_default_lang()
         self.mode = "timer"
         self.size_mode = "medium"
         self.theme_key = "graphite"
@@ -999,6 +1014,7 @@ class JellyTimerWidget(QWidget):
             try:
                 with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                self.lang = data.get("lang", self.lang)
                 self.mode = data.get("mode", self.mode)
                 self.size_mode = data.get("size_mode", self.size_mode)
                 self.theme_key = data.get("theme_key", self.theme_key)
@@ -1027,6 +1043,7 @@ class JellyTimerWidget(QWidget):
                 "app_version": APP_VERSION,
                 "export_build": EXPORT_BUILD,
                 "build_date": BUILD_DATE,
+                "lang": self.lang,
                 "mode": self.mode,
                 "size_mode": self.size_mode,
                 "theme_key": self.theme_key,
@@ -1306,6 +1323,7 @@ class JellyTimerWidget(QWidget):
             round(self.sp_scale_x.value, 3),
             round(self.sp_scale_y.value, 3),
             tuple(self.presets),
+            self.lang,
         )
         if sig != getattr(self, "_last_paint_sig", None):
             self._last_paint_sig = sig
@@ -1526,7 +1544,7 @@ class JellyTimerWidget(QWidget):
         ic_left = QRectF(rect.x() + 7, rect.center().y() - 6.5, 13, 13)
         render_svg_icon(painter, icon_name, ic_left, fg_col)
 
-        label = "Таймер" if self.mode == "timer" else "Секундомер"
+        label = tr_text(self.lang, "timer") if self.mode == "timer" else tr_text(self.lang, "stopwatch")
         font = QFont(UI_FONT, 9, QFont.Weight.DemiBold)
         painter.setFont(font)
         painter.setPen(fg_col)
@@ -1727,7 +1745,7 @@ class JellyTimerWidget(QWidget):
         self.draw_time_box(painter, clock_rect, 32, theme, align=Qt.AlignmentFlag.AlignCenter)
 
         y_btn = h - 38
-        play_lbl = "Пауза" if self.is_running else "Старт"
+        play_lbl = tr_text(self.lang, "pause") if self.is_running else tr_text(self.lang, "start")
         play_ic = "pause" if self.is_running else "play"
 
         if self.is_reset_available():
@@ -1754,23 +1772,23 @@ class JellyTimerWidget(QWidget):
             pw = (w - 24 - (n - 1) * 6) / n
             for i, mins in enumerate(self.presets):
                 px = 12 + i * (pw + 6)
-                self.draw_text_btn(painter, f"preset_{mins}", QRectF(px, y_p, pw, 24), f"{mins}м", theme, font_size=8)
+                self.draw_text_btn(painter, f"preset_{mins}", QRectF(px, y_p, pw, 24), f"{mins}{tr_text(self.lang, 'min_short')}", theme, font_size=8)
 
         y_btn = h - 42
-        play_lbl = "Пауза" if self.is_running else "Старт"
+        play_lbl = tr_text(self.lang, "pause") if self.is_running else tr_text(self.lang, "start")
         play_ic = "pause" if self.is_running else "play"
         show_reset = self.is_reset_available()
 
         if self.mode == "timer":
-            self.draw_text_btn(painter, "sub_5m", QRectF(12, y_btn, 38, 28), "-5м", theme, font_size=8)
-            self.draw_text_btn(painter, "sub_1m", QRectF(54, y_btn, 38, 28), "-1м", theme, font_size=8)
+            self.draw_text_btn(painter, "sub_5m", QRectF(12, y_btn, 38, 28), f"-5{tr_text(self.lang, 'min_short')}", theme, font_size=8)
+            self.draw_text_btn(painter, "sub_1m", QRectF(54, y_btn, 38, 28), f"-1{tr_text(self.lang, 'min_short')}", theme, font_size=8)
             if show_reset:
                 self.draw_text_btn(painter, "play", QRectF(98, y_btn, 108, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
                 self.draw_icon_btn(painter, "reset", QRectF(212, y_btn, 36, 28), "reset", theme)
             else:
                 self.draw_text_btn(painter, "play", QRectF(98, y_btn, 150, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
-            self.draw_text_btn(painter, "add_1m", QRectF(254, y_btn, 38, 28), "+1м", theme, font_size=8)
-            self.draw_text_btn(painter, "add_5m", QRectF(296, y_btn, 40, 28), "+5м", theme, font_size=8)
+            self.draw_text_btn(painter, "add_1m", QRectF(254, y_btn, 38, 28), f"+1{tr_text(self.lang, 'min_short')}", theme, font_size=8)
+            self.draw_text_btn(painter, "add_5m", QRectF(296, y_btn, 40, 28), f"+5{tr_text(self.lang, 'min_short')}", theme, font_size=8)
         else:
             if show_reset:
                 self.draw_text_btn(painter, "play", QRectF(w / 2 - 74, y_btn, 104, 28), play_lbl, theme, is_primary=True, font_size=9, icon_name=play_ic)
@@ -2008,34 +2026,40 @@ class JellyTimerWidget(QWidget):
         act_ver.setEnabled(False)
         menu.addSeparator()
 
-        act_timer = menu.addAction("Таймер" + (" ✓" if self.mode == "timer" else ""))
-        act_sw = menu.addAction("Секундомер" + (" ✓" if self.mode == "stopwatch" else ""))
+        act_timer = menu.addAction(tr_text(self.lang, "timer") + (" ✓" if self.mode == "timer" else ""))
+        act_sw = menu.addAction(tr_text(self.lang, "stopwatch") + (" ✓" if self.mode == "stopwatch" else ""))
         if self.mode == "timer":
-            act_edit = menu.addAction("Ввести время с клавиатуры")
+            act_edit = menu.addAction(tr_text(self.lang, "ctx_edit_time"))
         else:
             act_edit = None
         menu.addSeparator()
 
-        act_keys = menu.addAction("Настройки (Клавиша вызова, пресеты)...")
-        act_global_hk = menu.addAction("Слушать все клавиши всегда" + (" ✓" if self.global_hotkeys else ""))
+        act_keys = menu.addAction(tr_text(self.lang, "ctx_settings"))
+        act_global_hk = menu.addAction(tr_text(self.lang, "ctx_global_hk") + (" ✓" if self.global_hotkeys else ""))
         act_pro = menu.addAction("✨ Jelly Timer Plus (PRO)...")
         menu.addSeparator()
 
-        size_menu = menu.addMenu("Размер")
-        act_s_mini = size_menu.addAction("Мини" + (" ✓" if self.size_mode == "mini" else ""))
-        act_s_med = size_menu.addAction("Средний" + (" ✓" if self.size_mode == "medium" else ""))
-        act_s_lrg = size_menu.addAction("Большой" + (" ✓" if self.size_mode == "large" else ""))
+        size_menu = menu.addMenu(tr_text(self.lang, "ctx_size"))
+        act_s_mini = size_menu.addAction(tr_text(self.lang, "ctx_mini") + (" ✓" if self.size_mode == "mini" else ""))
+        act_s_med = size_menu.addAction(tr_text(self.lang, "ctx_med") + (" ✓" if self.size_mode == "medium" else ""))
+        act_s_lrg = size_menu.addAction(tr_text(self.lang, "ctx_large") + (" ✓" if self.size_mode == "large" else ""))
 
-        th_menu = menu.addMenu("Оттенок фона")
+        th_menu = menu.addMenu(tr_text(self.lang, "ctx_theme"))
         th_actions = {}
         for k, v in self.THEMES.items():
             mark = " ✓" if self.theme_key == k else ""
             th_actions[th_menu.addAction(v["name"] + mark)] = k
 
+        lang_menu = menu.addMenu(tr_text(self.lang, "ctx_lang"))
+        lang_actions = {}
+        for l_code, l_title in (("en", "English (EN)"), ("ru", "Русский (RU)"), ("kz", "Қазақша (KZ)")):
+            mark = " ✓" if self.lang == l_code else ""
+            lang_actions[lang_menu.addAction(l_title + mark)] = l_code
+
         menu.addSeparator()
-        act_snap = menu.addAction("Прилипание к краям" + (" ✓" if self.snap_enabled else ""))
+        act_snap = menu.addAction(tr_text(self.lang, "ctx_snap") + (" ✓" if self.snap_enabled else ""))
         menu.addSeparator()
-        act_quit = menu.addAction("Закрыть")
+        act_quit = menu.addAction(tr_text(self.lang, "ctx_quit"))
 
         chosen = menu.exec(event.globalPos())
         if not chosen:
@@ -2061,6 +2085,9 @@ class JellyTimerWidget(QWidget):
             self.set_size_mode("large")
         elif chosen in th_actions:
             self.theme_key = th_actions[chosen]
+            self.save_config()
+        elif chosen in lang_actions:
+            self.lang = lang_actions[chosen]
             self.save_config()
         elif chosen == act_snap:
             self.snap_enabled = not self.snap_enabled
