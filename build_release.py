@@ -73,14 +73,57 @@ def update_browser_extension_version(ext_ver: str, exp_num: int, build_date: str
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
         html = re.sub(
-            r'Версия пакета: v[0-9.]+ • Export #\d+ \([0-9-]+\)',
-            f'Версия пакета: v{ext_ver} • Export #{exp_num:02d} ({build_date})',
+            r'Package: v[0-9.]+ • Export #\d+ \([0-9-]+\)',
+            f'Package: v{ext_ver} • Export #{exp_num:02d} ({build_date})',
+            html
+        )
+        html = re.sub(
+            r'v[0-9.]+ • Exp #\d+',
+            f'v{ext_ver} • Exp #{exp_num:02d}',
             html
         )
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html)
 
-    print(f"[OK] Браузерное расширение синхронизировано -> v{ext_ver} (Exp #{exp_num:02d})")
+    popup_path = os.path.join(ROOT_DIR, "browser_extension", "popup.html")
+    if os.path.exists(popup_path):
+        with open(popup_path, "r", encoding="utf-8") as f:
+            phtml = f.read()
+        phtml = re.sub(r'id="pBadge">v[0-9.]+<', f'id="pBadge">v{ext_ver}<', phtml)
+        with open(popup_path, "w", encoding="utf-8") as f:
+            f.write(phtml)
+
+    pro_js_path = os.path.join(ROOT_DIR, "browser_extension", "pro_upgrade.js")
+    if os.path.exists(pro_js_path):
+        with open(pro_js_path, "r", encoding="utf-8") as f:
+            pjs = f.read()
+        pjs = re.sub(r'let bestExp = \d+;', f'let bestExp = {exp_num};', pjs)
+        pjs = re.sub(r'let bestDate = "[^"]*";', f'let bestDate = "{build_date}";', pjs)
+        with open(pro_js_path, "w", encoding="utf-8") as f:
+            f.write(pjs)
+
+    content_js_path = os.path.join(ROOT_DIR, "browser_extension", "content.js")
+    if os.path.exists(content_js_path):
+        with open(content_js_path, "r", encoding="utf-8") as f:
+            cjs = f.read()
+        cjs = re.sub(r'const ver = state\.appVersion \|\| "[^"]*";', f'const ver = state.appVersion || "{ext_ver}";', cjs)
+        cjs = re.sub(r'const exp = String\(state\.exportBuild \|\| \d+\)', f'const exp = String(state.exportBuild || {exp_num})', cjs)
+        with open(content_js_path, "w", encoding="utf-8") as f:
+            f.write(cjs)
+
+    docs_path = os.path.join(ROOT_DIR, "docs", "index.html")
+    if os.path.exists(docs_path):
+        with open(docs_path, "r", encoding="utf-8") as f:
+            dhtml = f.read()
+        dhtml = re.sub(r'id="verLabel">v[0-9.]+ • Exp #\d+<', f'id="verLabel">v{ext_ver} • Exp #{exp_num:02d}<', dhtml)
+        dhtml = re.sub(r'id="specVerLabel">v[0-9.]+ • EN / RU / KZ<', f'id="specVerLabel">v{ext_ver} • EN / RU / KZ<', dhtml)
+        dhtml = re.sub(r'id="remoteSyncNote">Build: v[0-9.]+ • Export #\d+<', f'id="remoteSyncNote">Build: v{ext_ver} • Export #{exp_num:02d}<', dhtml)
+        dhtml = re.sub(r'let curSiteVer = "[^"]*";', f'let curSiteVer = "{ext_ver}";', dhtml)
+        dhtml = re.sub(r'let curSiteExp = \d+;', f'let curSiteExp = {exp_num};', dhtml)
+        with open(docs_path, "w", encoding="utf-8") as f:
+            f.write(dhtml)
+
+    print(f"[OK] Браузерное расширение и лендинг синхронизированы -> v{ext_ver} (Exp #{exp_num:02d})")
 
 
 def generate_windows_version_file(app_ver: str, exp_num: int) -> str:

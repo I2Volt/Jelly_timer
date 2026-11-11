@@ -45,9 +45,9 @@ if IS_WIN:
 
 UI_FONT = "SF Pro Display" if IS_MAC else ("Ubuntu" if IS_LINUX else "Segoe UI")
 
-APP_VERSION = "1.2.0"
-EXPORT_BUILD = 5
-BUILD_DATE = "2026-11-05"
+APP_VERSION = "1.2.2"
+EXPORT_BUILD = 7
+BUILD_DATE = "2026-11-08"
 VERSION_LABEL = f"v{APP_VERSION} (Exp #{EXPORT_BUILD:02d} • {BUILD_DATE})"
 
 if getattr(sys, "frozen", False):
@@ -1481,8 +1481,11 @@ class JellyTimerWidget(QWidget):
         if self.mode != "timer":
             self.switch_mode("timer")
         self.timer_remaining = max(0.0, min(999 * 3600.0, self.timer_remaining + delta_seconds))
-        if not self.is_running or self.timer_remaining > self.timer_total:
-            self.timer_total = max(1.0, self.timer_remaining)
+        if self.timer_remaining <= 0.0:
+            self.is_running = False
+            self.alarm_flash = 0.0
+        if (not self.is_running or self.timer_remaining > self.timer_total) and self.timer_remaining > 0:
+            self.timer_total = self.timer_remaining
         self.save_config()
 
     def reset_clock(self):
@@ -1873,7 +1876,7 @@ class JellyTimerWidget(QWidget):
         self.draw_icon_btn(painter, "cycle_size", QRectF(w - 52, 12, 24, 24), "expand", theme)
         self.draw_icon_btn(painter, "close", QRectF(w - 28, 12, 20, 24), "close", theme)
 
-        clock_rect = QRectF(14, 42, w - 28, 64)
+        clock_rect = QRectF(14, 42, w - 28, 64) if self.mode == "timer" else QRectF(14, 46, w - 28, h - 92)
         self.draw_time_box(painter, clock_rect, 40, theme, align=Qt.AlignmentFlag.AlignCenter)
 
         if self.mode == "timer" and self.presets:

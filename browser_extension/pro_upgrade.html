@@ -37,7 +37,7 @@
       border: 1px solid var(--border-strong);
       border-radius: 14px;
       padding: 10px 14px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand img { width: 24px; height: 24px; border-radius: 5px; }
@@ -67,7 +67,55 @@
       border: 1px solid var(--border-strong);
     }
     h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 10px; }
-    .subtitle { color: var(--muted); font-size: 15px; max-width: 660px; margin-bottom: 28px; }
+    .subtitle { color: var(--muted); font-size: 15px; max-width: 660px; margin-bottom: 20px; }
+    .hero-cta-bar {
+      background: linear-gradient(180deg, rgba(12, 34, 54, 0.52) 0%, #18181b 100%);
+      border: 1px solid rgba(56, 189, 248, 0.42);
+      box-shadow: inset 0 1px 0 rgba(125, 211, 252, 0.18), 0 12px 32px rgba(2, 132, 199, 0.1);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 26px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+      color: #f8fafc;
+      border: 1px solid rgba(125, 211, 252, 0.45);
+      box-shadow: inset 0 1px 0 rgba(224, 242, 254, 0.28);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13.5px;
+      padding: 10px 18px;
+      border-radius: 8px;
+    }
+    .btn-primary:hover { background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 100%); color: #ffffff; }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-strong);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 10px 15px;
+      border-radius: 8px;
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -87,42 +135,61 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 20px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
     .compare h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
     th { color: var(--muted); font-weight: 600; }
     tr:last-child td { border-bottom: none; }
-    .cta-box {
-      background: linear-gradient(180deg, rgba(12, 34, 54, 0.48) 0%, #18181b 100%);
-      border: 1px solid rgba(56, 189, 248, 0.38);
-      box-shadow: inset 0 1px 0 rgba(125, 211, 252, 0.18), 0 12px 32px rgba(2, 132, 199, 0.08);
+    .forms-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid #0ea5e9;
       border-radius: 14px;
-      padding: 22px 24px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      padding: 22px;
+      margin-bottom: 24px;
     }
-    .btn-primary {
+    .forms-box h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+    .forms-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .form-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .form-field label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .form-input, .form-select, .form-textarea {
+      background: #141417;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 9px 11px;
+      outline: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #38bdf8; }
+    .form-textarea { min-height: 86px; resize: vertical; }
+    .forms-done {
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    .forms-done.active { display: flex; }
+    .forms-done-badge {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
-      color: #f8fafc;
-      border: 1px solid rgba(125, 211, 252, 0.45);
-      box-shadow: inset 0 1px 0 rgba(224, 242, 254, 0.28);
-      text-decoration: none;
+      gap: 8px;
+      color: #7dd3fc;
       font-weight: 600;
-      font-size: 13.5px;
-      padding: 10px 20px;
-      border-radius: 8px;
+      font-size: 15px;
     }
-    .btn-primary:hover { background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 100%); color: #ffffff; }
     .footer {
-      margin-top: 24px;
+      margin-top: 20px;
       font-size: 11.5px;
       color: var(--dim);
       display: flex;
@@ -130,6 +197,9 @@
       flex-wrap: wrap;
       gap: 10px;
       font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -139,7 +209,7 @@
       <div class="brand">
         <img src="icons/icon48.png" alt="Jelly Timer" />
         <span class="brand-title">Jelly Timer Plus (PRO)</span>
-        <span class="brand-ver" id="versionBadge">v1.2.0 • Exp #05</span>
+        <span class="brand-ver" id="versionBadge">v1.2.2 • Exp #07</span>
       </div>
       <div class="pill-group">
         <button class="pill-btn active" data-lang="en">EN</button>
@@ -152,6 +222,29 @@
     <p class="subtitle" data-i18n="sub">
       While the browser extension stays inside your web tabs, Jelly Timer Plus (PRO) runs natively above all Windows and macOS applications — IDEs, Figma, Notion, spreadsheets, and documents.
     </p>
+
+    <!-- Direct action bar right on the first screen -->
+    <div class="hero-cta-bar">
+      <div>
+        <div style="font-weight: 600; font-size: 15.5px; color: #fafafa; margin-bottom: 3px;" data-i18n="cta_h">
+          Jelly Timer Plus (PRO) — Windows &amp; macOS
+        </div>
+        <div style="color: var(--muted); font-size: 12.5px;" id="ctaSubtext" data-i18n="cta_p">
+          Direct purchase &amp; instant download for Windows (.exe) and macOS (.app / .command).
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a class="btn-primary" id="proCheckoutBtn" href="https://i2volt.github.io/Jelly_timer/#editions" target="_blank" rel="noopener noreferrer" data-i18n="cta_buy_btn">
+          Get Jelly Timer Plus (PRO) →
+        </a>
+        <a class="btn-secondary" id="supportBtn" href="#supportFormBox" data-i18n="cta_sup_btn">
+          Support Form
+        </a>
+        <a class="btn-secondary" id="freeReleasesBtn" href="https://github.com/I2Volt/Jelly_timer/releases" target="_blank" rel="noopener noreferrer" data-i18n="cta_free_btn">
+          GitHub Releases
+        </a>
+      </div>
+    </div>
 
     <div class="grid">
       <div class="card">
@@ -185,13 +278,13 @@
         <tbody>
           <tr>
             <td data-i18n="r1">Magnetic edge-snap &amp; spring peel-off physics</td>
-            <td>Included</td>
-            <td>Included</td>
+            <td>✓</td>
+            <td>✓</td>
           </tr>
           <tr>
-            <td data-i18n="r2">Writer-friendly focus key (Right Shift / Right Ctrl)</td>
-            <td>Included</td>
-            <td>Included</td>
+            <td data-i18n="r2">Customizable hotkeys &amp; summon key</td>
+            <td>✓</td>
+            <td>✓</td>
           </tr>
           <tr>
             <td data-i18n="r3">Floats over all Windows &amp; macOS applications outside browser</td>
@@ -201,39 +294,66 @@
           <tr>
             <td data-i18n="r4">Pomodoro &amp; Flowtime (smart 1/5 break calculation)</td>
             <td>—</td>
-            <td>Included</td>
+            <td>✓</td>
           </tr>
           <tr>
             <td data-i18n="r5">Auto-start &amp; auto-pause by active window title</td>
             <td>—</td>
-            <td>Included</td>
+            <td>✓</td>
           </tr>
           <tr>
             <td data-i18n="r6">7-day focus chart &amp; active application tracker</td>
             <td>—</td>
-            <td>Included</td>
+            <td>✓</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="cta-box">
-      <div>
-        <h3 style="font-size: 16px; margin-bottom: 4px;" data-i18n="cta_h">Jelly Timer Plus (PRO) — Desktop Edition</h3>
-        <p style="color: var(--muted); font-size: 13px;" id="ctaSubtext" data-i18n="cta_p">
-          Explore specifications and download builds for Windows and macOS.
-        </p>
+    <!-- Classic Embedded Support Form (No Email Required) -->
+    <div class="forms-box" id="supportFormBox">
+      <div id="proSupportFormWrap">
+        <h2 data-i18n="f_title">Support &amp; Feedback Form</h2>
+        <p class="forms-sub" data-i18n="f_sub">Fill out the form below — your response will be recorded directly without needing an email app.</p>
+        <form id="proSupportForm">
+          <div class="form-grid">
+            <div class="form-field" style="margin-bottom:0;">
+              <label for="pfContact" data-i18n="f_contact">Your Name or Contact (Telegram / Email, optional)</label>
+              <input class="form-input" id="pfContact" type="text" placeholder="@username / name" />
+            </div>
+            <div class="form-field" style="margin-bottom:0;">
+              <label for="pfTopic" data-i18n="f_topic">Category</label>
+              <select class="form-select" id="pfTopic">
+                <option value="pro" data-i18n="f_opt_pro">Question about PRO / Desktop Version</option>
+                <option value="bug" data-i18n="f_opt_bug">Bug Report / Technical Issue</option>
+                <option value="idea" data-i18n="f_opt_idea">Feature Request / Idea</option>
+                <option value="refund" data-i18n="f_opt_refund">Order / Refund Inquiry</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="pfMsg" data-i18n="f_msg">Your Question or Description *</label>
+            <textarea class="form-textarea" id="pfMsg" required placeholder="..."></textarea>
+          </div>
+          <button type="submit" class="btn-primary" style="cursor:pointer;" data-i18n="f_submit">Submit Form</button>
+        </form>
       </div>
-      <a class="btn-primary" id="proExternalLink" href="https://i2volt.github.io/Jelly_timer/" target="_blank" rel="noopener noreferrer" data-i18n="cta_btn">
-        Open Jelly Timer Plus Page →
-      </a>
+      <div class="forms-done" id="proSupportDone">
+        <div class="forms-done-badge">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span data-i18n="f_done_title">Your response has been recorded!</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);" id="proTicketMeta">Ticket #JT-1042</p>
+        <button type="button" class="btn-secondary" id="proResetFormBtn" style="cursor:pointer;margin-top:4px;" data-i18n="f_again">Submit another response</button>
+      </div>
     </div>
 
     <div class="footer">
-      <span id="buildInfoText">Package: v1.2.0 • Export #05 (2026-11-05)</span>
-      <span id="syncStatusText">Update sync active</span>
+      <span id="buildInfoText">Package: v1.2.2 • Export #07 (2026-11-08)</span>
+      <span id="syncStatusText">Live widget active on this page</span>
     </div>
   </div>
   <script src="pro_upgrade.js"></script>
+  <script src="content.js"></script>
 </body>
 </html>

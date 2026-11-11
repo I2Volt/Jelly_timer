@@ -652,6 +652,95 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* Support Form Section */
+    .support-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 20px;
+    }
+
+    .support-info h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .support-info p {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      line-height: 1.55;
+    }
+
+    .support-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-field label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: #141417;
+      border: 1px solid var(--border-strong);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12.5px;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.12s;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--ocean-bright);
+    }
+
+    .form-textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    .support-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .support-status {
+      font-size: 12px;
+      color: var(--ocean-soft);
+      display: none;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 720px) {
+      .support-card { grid-template-columns: 1fr; }
+      .form-row-2 { grid-template-columns: 1fr; }
+    }
+
     @media (max-width: 640px) {
       .media-grid { grid-template-columns: 1fr; }
       .hero-head h1 { font-size: 24px; }
@@ -665,7 +754,7 @@
       <div class="brand">
         <img src="assets/jelly_timer_pro.png" alt="Jelly Timer icon" />
         <span class="brand-title">Jelly Timer</span>
-        <span class="brand-ver" id="verLabel">v1.2.0 • Exp #05</span>
+        <span class="brand-ver" id="verLabel">v1.2.2 • Exp #07</span>
       </div>
       <div class="topbar-right">
         <div class="pill-group" role="group" aria-label="Language switcher">
@@ -782,7 +871,7 @@
     <section class="section">
       <div class="section-header">
         <h2 data-i18n="sec_specs">Specification Matrix</h2>
-        <span>v1.2.0 • EN / RU / KZ</span>
+        <span id="specVerLabel">v1.2.2 • EN / RU / KZ</span>
       </div>
       <div class="spec-table-wrap">
         <table>
@@ -897,7 +986,7 @@
       </div>
     </section>
 
-    <!-- Legal, Refund & Privacy Policies (Required for Merchant of Record / Lemon Squeezy Review) -->
+      <!-- Legal, Refund & Privacy Policies (Required for Merchant of Record / Lemon Squeezy Review) -->
     <section class="legal-grid">
       <div class="legal-card">
         <h4 data-i18n="leg_terms_t">Terms of Service &amp; License</h4>
@@ -919,9 +1008,59 @@
       </div>
     </section>
 
+    <!-- Support & Feedback Form -->
+    <section class="section" id="support" style="margin-top: 28px; margin-bottom: 12px;">
+      <div class="section-header">
+        <h2 data-i18n="sup_sec_title">Support &amp; Feedback Form</h2>
+        <span data-i18n="sup_sec_sub">Questions, bug reports, PRO delivery &amp; refunds</span>
+      </div>
+      <div class="support-card">
+        <div class="support-info">
+          <h3 data-i18n="sup_h3">Need help or have a question?</h3>
+          <p data-i18n="sup_p1">
+            Fill out the form to report a bug, ask about the Browser Extension or Desktop PRO version, or request license assistance. Your response is recorded directly in the form without needing an email app.
+          </p>
+        </div>
+        <div>
+          <form class="support-form" id="supportForm">
+            <div class="form-row-2">
+              <div class="form-field">
+                <label for="supEmail" data-i18n="sup_lbl_email">Your Name or Contact (Telegram / handle, optional)</label>
+                <input class="form-input" id="supEmail" type="text" placeholder="@username / name" />
+              </div>
+              <div class="form-field">
+                <label for="supTopic" data-i18n="sup_lbl_topic">Category</label>
+                <select class="form-select" id="supTopic">
+                  <option value="PRO Version / License" data-i18n="sup_opt_pro">PRO Version / Desktop Delivery</option>
+                  <option value="Bug Report" data-i18n="sup_opt_bug">Bug Report / Issue</option>
+                  <option value="Feature Request" data-i18n="sup_opt_idea">Feature Idea / Feedback</option>
+                  <option value="Refund Request" data-i18n="sup_opt_refund">Refund Request (14 days)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="supMsg" data-i18n="sup_lbl_msg">Message *</label>
+              <textarea class="form-textarea" id="supMsg" placeholder="Describe your question or issue..." required></textarea>
+            </div>
+            <div class="support-actions">
+              <button type="submit" class="ui-btn primary" data-i18n="sup_btn_send">Submit Form</button>
+            </div>
+          </form>
+          <div id="supDoneBox" style="display:none;flex-direction:column;align-items:flex-start;gap:10px;padding:6px 0;">
+            <div style="display:inline-flex;align-items:center;gap:8px;color:var(--ocean-soft);font-weight:600;font-size:15px;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span data-i18n="sup_done_title">Your response has been recorded!</span>
+            </div>
+            <p style="font-size:12.5px;color:var(--muted);" id="supTicketMeta">Ticket #JT-1042</p>
+            <button type="button" class="ui-btn" id="supAgainBtn" data-i18n="sup_btn_again">Submit another response</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <footer class="footer-meta">
-      <span>© 2026 I2Volt • Jelly Timer Project (<a href="mailto:ivolt5220@gmail.com" style="color:var(--muted);">ivolt5220@gmail.com</a>)</span>
-      <span id="remoteSyncNote">Build: v1.2.0 • Export #05</span>
+      <span>© 2026 I2Volt • Jelly Timer Project</span>
+      <span id="remoteSyncNote">Build: v1.2.2 • Export #07</span>
     </footer>
   </div>
 
@@ -957,12 +1096,12 @@
           sec_editions: "Editions & Licensing",
           sec_editions_sub: "No subscriptions — one-time license",
           ed_free_name: "Jelly Timer (Standard)",
-          ed_free_1: "Browser Extension (Chrome, Edge, Firefox) with cross-tab sync",
+          ed_free_1: "Browser Extension (Chrome, Edge, Firefox) — works inside your browser across tabs",
           ed_free_2: "Desktop Free app for Windows (.exe) and macOS (.app)",
           ed_free_3: "Countdown timer & tenth-of-a-second stopwatch",
           ed_free_4: "3 sizes (Mini, Medium, Large) & 3 matte dark themes",
           ed_free_btn: "Download Free Builds on GitHub",
-          ed_pro_1: "Standalone Desktop Plus builds for Windows & macOS",
+          ed_pro_1: "Includes the full Desktop PRO Version sent to you for Windows & macOS",
           ed_pro_2: "Pomodoro intervals & uninterrupted Flowtime (1/5 break calculation)",
           ed_pro_3: "Automatic start/pause triggered by active work window titles",
           ed_pro_4: "Local 7-day focus bar chart, session counter & top apps tracker",
@@ -974,6 +1113,20 @@
           leg_refund_p: "If Jelly Timer Plus does not fit your workflow or experiences technical issues on your system, request a full refund within 14 days of purchase by emailing support.",
           leg_priv_t: "Privacy Policy (100% Local)",
           leg_priv_p: "Both the Browser Extension and Desktop applications store all timers, settings, and focus statistics strictly locally on your device. Zero telemetry or personal data is collected.",
+          sup_sec_title: "Support & Feedback Form",
+          sup_sec_sub: "Questions, bug reports, PRO delivery & refunds",
+          sup_h3: "Need help or have a question?",
+          sup_p1: "Fill out the form to report a bug, ask about the Browser Extension or Desktop PRO version, or request license assistance. Your response is recorded directly without needing an email app.",
+          sup_lbl_email: "Your Name or Contact (Telegram / handle, optional)",
+          sup_lbl_topic: "Category",
+          sup_opt_pro: "PRO Version / Desktop Delivery",
+          sup_opt_bug: "Bug Report / Issue",
+          sup_opt_idea: "Feature Idea / Feedback",
+          sup_opt_refund: "Refund Request (14 days)",
+          sup_lbl_msg: "Message *",
+          sup_btn_send: "Submit Form",
+          sup_done_title: "Your response has been recorded!",
+          sup_btn_again: "Submit another response",
           w_timer: "Timer",
           w_sw: "Stopwatch",
           w_start: "Start",
@@ -990,9 +1143,9 @@
           sec_workflows: "Два нативных формата",
           sec_workflows_sub: "Единая физика для браузера и операционной системы",
           wf_ext_title: "1. Браузерное расширение (Chrome / Edge / Firefox)",
-          wf_ext_desc: "Изолированный Shadow DOM без влияния на верстку сайтов. Синхронизирует отсчёт между всеми открытыми вкладками с точностью до десятых долей секунды.",
-          wf_desk_title: "2. Десктопное приложение и Plus (Windows & macOS)",
-          wf_desk_desc: "Автономная нативная программа поверх любых окон — IDE, текстовых редакторов, таблиц и документов без перехвата фокуса клавиатуры.",
+          wf_ext_desc: "Работает внутри вашего браузера поверх веб-страниц и синхронизирует отсчёт между всеми открытыми вкладками с точностью до десятых долей секунды.",
+          wf_desk_title: "2. Десктопная PRO-версия (отправляется при покупке PRO)",
+          wf_desk_desc: "При приобретении PRO вам также отправляется отдельная десктопная версия для ноутбука/ПК (Windows и macOS), которая работает поверх любых программ вне браузера.",
           sec_specs: "Техническое сравнение версий",
           th_cap: "Возможность",
           th_ext: "Расширение браузера",
@@ -1009,12 +1162,12 @@
           sec_editions: "Версии и лицензия",
           sec_editions_sub: "Без подписок — разовая покупка навсегда",
           ed_free_name: "Jelly Timer (Standard)",
-          ed_free_1: "Расширение для браузера с синхронизацией между вкладками",
-          ed_free_2: "Бесплатная десктопная программа для Windows (.exe) и macOS (.app)",
+          ed_free_1: "Браузерное расширение (работает внутри браузера между вкладками)",
+          ed_free_2: "Бесплатная десктопная версия для Windows и macOS",
           ed_free_3: "Таймер обратного отсчёта и секундомер с десятыми долями секунды",
           ed_free_4: "3 размера (Мини, Средний, Большой) и 3 тёмные матовые темы",
           ed_free_btn: "Скачать бесплатные сборки на GitHub",
-          ed_pro_1: "Автономные сборки Desktop Plus для Windows и macOS",
+          ed_pro_1: "При покупке PRO вам отправляется полная Десктоп PRO-версия (Windows и macOS)",
           ed_pro_2: "Интервалы Помодоро и режим Flowtime (умный перерыв 1/5 от работы)",
           ed_pro_3: "Автоматический старт и пауза при открытии рабочих программ",
           ed_pro_4: "Локальный график фокуса за 7 дней, счётчик сессий и топ окон",
@@ -1023,9 +1176,23 @@
           leg_terms_t: "Условия использования и лицензия",
           leg_terms_p: "Лицензия Jelly Timer Plus (PRO) предоставляется бессрочно для использования на ваших личных компьютерах Windows и macOS, включая все обновления ветки v1.x.",
           leg_refund_t: "Гарантия возврата 14 дней",
-          leg_refund_p: "Если программа не подошла под ваш рабочий процесс или возникли технические сложности, мы вернём 100% оплаты в течение 14 дней по запросу на почту.",
+          leg_refund_p: "Если программа не подошла под ваш рабочий процесс или возникли технические сложности, мы вернём 100% оплаты в течение 14 дней через форму поддержки.",
           leg_priv_t: "Конфиденциальность (100% локально)",
           leg_priv_p: "Расширение и десктопные приложения хранят настройки и статистику исключительно локально на вашем устройстве. Никакая телеметрия не собирается.",
+          sup_sec_title: "Форма поддержки и обратной связи",
+          sup_sec_sub: "Вопросы, баги, получение Десктоп PRO-версии и возвраты",
+          sup_h3: "Нужна помощь или есть вопрос?",
+          sup_p1: "Заполните форму ниже — ваш ответ запишется напрямую без открытия почтовых программ и писем.",
+          sup_lbl_email: "Ваше имя или контакт (Telegram / ник, необязательно)",
+          sup_lbl_topic: "Категория обращения",
+          sup_opt_pro: "Вопрос по PRO / Получение Десктоп-версии",
+          sup_opt_bug: "Сообщить об ошибке / Баг",
+          sup_opt_idea: "Предложение / Идея",
+          sup_opt_refund: "Возврат средств (14 дней)",
+          sup_lbl_msg: "Сообщение *",
+          sup_btn_send: "Отправить ответ",
+          sup_done_title: "Ответ записан! Спасибо за обращение.",
+          sup_btn_again: "Отправить ещё один ответ",
           w_timer: "Таймер",
           w_sw: "Секундомер",
           w_start: "Старт",
@@ -1042,9 +1209,9 @@
           sec_workflows: "Екі нативті формат",
           sec_workflows_sub: "Браузер мен операциялық жүйеге арналған бірыңғай физика",
           wf_ext_title: "1. Браузер кеңейтімі (Chrome / Edge / Firefox)",
-          wf_ext_desc: "Оқшауланған Shadow DOM арқылы жұмыс істейді. Барлық ашық қойындылар арасында уақытты секундтың оннан бір бөлігіне дейін синхрондайды.",
-          wf_desk_title: "2. Десктоп бағдарламасы және Plus (Windows & macOS)",
-          wf_desk_desc: "Кез келген терезенің (IDE, редакторлар, кестелер) үстінде тұратын дербес бағдарлама — пернетақта фокусын тартып алмайды.",
+          wf_ext_desc: "Браузер ішінде жұмыс істейді және барлық ашық қойындылар арасында уақытты секундтың оннан бір бөлігіне дейін синхрондайды.",
+          wf_desk_title: "2. Десктоп PRO-нұсқасы (PRO сатып алғанда жіберіледі)",
+          wf_desk_desc: "PRO сатып алғанда сізге ноутбук/ДК үшін бөлек Десктоп PRO-нұсқасы да жіберіледі (Windows және macOS).",
           sec_specs: "Нұсқаларды техникалық салыстыру",
           th_cap: "Мүмкіндік",
           th_ext: "Браузер кеңейтімі",
@@ -1062,11 +1229,11 @@
           sec_editions_sub: "Жазылымсыз — бір реттік төлем",
           ed_free_name: "Jelly Timer (Standard)",
           ed_free_1: "Қойындылар арасында синхрондалатын браузер кеңейтімі",
-          ed_free_2: "Windows (.exe) және macOS (.app) үшін тегін бағдарлама",
+          ed_free_2: "Windows және macOS үшін тегін бағдарлама",
           ed_free_3: "Кері санақ таймері және дәл секундөлшегіш",
           ed_free_4: "3 өлшем (Мини, Орташа, Үлкен) және 3 күңгірт тақырып",
           ed_free_btn: "GitHub-тан тегін жүктеп алу",
-          ed_pro_1: "Windows және macOS үшін дербес Desktop Plus жинақтары",
+          ed_pro_1: "PRO сатып алғанда толық Десктоп PRO-нұсқасы қоса жіберіледі (Windows & macOS)",
           ed_pro_2: "Помодоро интервалдары және Flowtime режимі (1/5 ақылды үзіліс)",
           ed_pro_3: "Жұмыс бағдарламаларын ашқанда автоматты іске қосу және кідірту",
           ed_pro_4: "7 күндік фокус графигі, сессия есептегіші және топ терезелер",
@@ -1078,6 +1245,20 @@
           leg_refund_p: "Егер бағдарлама жұмыс процесіңізге сәйкес келмесе, сатып алғаннан кейін 14 күн ішінде толық қайтаруды сұрай аласыз.",
           leg_priv_t: "Құпиялылық саясаты (100% локалды)",
           leg_priv_p: "Кеңейтім де, десктоп бағдарламасы да барлық деректерді тек құрылғыңызда сақтайды. Ешқандай жеке деректер жиналмайды.",
+          sup_sec_title: "Қолдау қызметі және кері байланыс формасы",
+          sup_sec_sub: "Сұрақтар, қателер, Десктоп PRO-нұсқасын алу және қайтару",
+          sup_h3: "Көмек керек пе немесе сұрағыңыз бар ма?",
+          sup_p1: "Төмендегі форманы толтырыңыз — жауабыңыз поштасыз тікелей тіркеледі.",
+          sup_lbl_email: "Атыңыз немесе байланыс (Telegram / ник, міндетті емес)",
+          sup_lbl_topic: "Санат",
+          sup_opt_pro: "PRO нұсқасы / Десктоп нұсқасын алу",
+          sup_opt_bug: "Қате туралы хабарлау (Баг)",
+          sup_opt_idea: "Ұсыныс / Идея",
+          sup_opt_refund: "Қаражатты қайтару (14 күн)",
+          sup_lbl_msg: "Хабарлама *",
+          sup_btn_send: "Жауапты жіберу",
+          sup_done_title: "Жауап жазылды! Рақмет.",
+          sup_btn_again: "Тағы бір жауап жіберу",
           w_timer: "Таймер",
           w_sw: "Секундөлшегіш",
           w_start: "Бастау",
@@ -1408,19 +1589,101 @@
       }
       requestAnimationFrame(loop);
 
-      // Sync dynamic pro_landing_url from version_info.json
+      // Sync dynamic version & pro_landing_url from version_info.json (always picking newest version)
+      let curSiteVer = "1.2.2";
+      let curSiteExp = 7;
+      let supWebhookUrl = "";
+
+      function isRemoteNewer(rVer, rExp, cVer, cExp) {
+        const a = String(rVer || "0.0.0").split(".").map((n) => parseInt(n, 10) || 0);
+        const b = String(cVer || "0.0.0").split(".").map((n) => parseInt(n, 10) || 0);
+        for (let i = 0; i < 3; i++) {
+          if ((a[i] || 0) > (b[i] || 0)) return true;
+          if ((a[i] || 0) < (b[i] || 0)) return false;
+        }
+        return (parseInt(rExp, 10) || 0) >= (parseInt(cExp, 10) || 0);
+      }
+
       fetch("https://raw.githubusercontent.com/I2Volt/Jelly_timer/main/version_info.json", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
         .then((meta) => {
           if (!meta) return;
-          const exp = String(meta.export_build || 5).padStart(2, "0");
-          document.getElementById("verLabel").textContent = `v${meta.app_version} • Exp #${exp}`;
-          document.getElementById("remoteSyncNote").textContent = `Build: v${meta.app_version} • Export #${exp} (${meta.build_date})`;
+          if (isRemoteNewer(meta.app_version, meta.export_build, curSiteVer, curSiteExp)) {
+            curSiteVer = meta.app_version;
+            curSiteExp = meta.export_build || curSiteExp;
+          }
+          const exp = String(curSiteExp).padStart(2, "0");
+          document.getElementById("verLabel").textContent = `v${curSiteVer} • Exp #${exp}`;
+          const specLbl = document.getElementById("specVerLabel");
+          if (specLbl) specLbl.textContent = `v${curSiteVer} • EN / RU / KZ`;
+          document.getElementById("remoteSyncNote").textContent = `Build: v${curSiteVer} • Export #${exp} (${meta.build_date || "2026-11-08"})`;
           if (meta.pro_landing_url) {
             document.getElementById("buyProLink").href = meta.pro_landing_url;
           }
+          if (meta.support_webhook_url) {
+            supWebhookUrl = meta.support_webhook_url;
+          }
         })
         .catch(() => {});
+
+      // Classic Embedded Support Form Handler (No Email Required)
+      const supForm = document.getElementById("supportForm");
+      const supEmail = document.getElementById("supEmail");
+      const supTopic = document.getElementById("supTopic");
+      const supMsg = document.getElementById("supMsg");
+      const supDoneBox = document.getElementById("supDoneBox");
+      const supTicketMeta = document.getElementById("supTicketMeta");
+      const supAgainBtn = document.getElementById("supAgainBtn");
+
+      if (supForm) {
+        supForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const contact = (supEmail && supEmail.value.trim()) || "Anonymous";
+          const topic = (supTopic && supTopic.value) || "Support";
+          const msg = (supMsg && supMsg.value.trim()) || "";
+          if (!msg) return;
+
+          const ticketId = "JT-" + Math.floor(1000 + Math.random() * 9000);
+          const payload = {
+            ticketId,
+            contact,
+            topic,
+            message: msg,
+            version: `v${curSiteVer} (Exp #${String(curSiteExp).padStart(2, "0")})`,
+            timestamp: new Date().toISOString()
+          };
+
+          try {
+            const saved = JSON.parse(localStorage.getItem("jellySupportTickets") || "[]");
+            saved.push(payload);
+            localStorage.setItem("jellySupportTickets", JSON.stringify(saved));
+          } catch (err) {}
+
+          if (supWebhookUrl) {
+            fetch(supWebhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            }).catch(() => {});
+          }
+
+          if (supTicketMeta) {
+            supTicketMeta.textContent = curLang === "ru"
+              ? `Номер обращения: #${ticketId} • Версия: v${curSiteVer}`
+              : (curLang === "kz" ? `Өтініш нөмірі: #${ticketId} • v${curSiteVer}` : `Ticket ID: #${ticketId} • Version: v${curSiteVer}`);
+          }
+          supForm.style.display = "none";
+          if (supDoneBox) supDoneBox.style.display = "flex";
+          supForm.reset();
+        });
+      }
+
+      if (supAgainBtn) {
+        supAgainBtn.addEventListener("click", () => {
+          if (supDoneBox) supDoneBox.style.display = "none";
+          if (supForm) supForm.style.display = "flex";
+        });
+      }
 
       applyLang(curLang);
     })();

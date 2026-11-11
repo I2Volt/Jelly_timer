@@ -1,14 +1,16 @@
 {
-  "app_version": "1.2.0",
-  "export_build": 5,
-  "build_date": "2026-11-05",
-  "extension_version": "1.2.0",
+  "app_version": "1.2.2",
+  "export_build": 7,
+  "build_date": "2026-11-08",
+  "extension_version": "1.2.2",
   "pro_landing_url": "https://i2volt.github.io/Jelly_timer/",
-  "extension_store_url": "https://github.com/I2Volt/Jelly_timer#-install-the-browser-extension-chrome--edge--brave--opera--yandex",
+  "pro_checkout_url": "https://i2volt.github.io/Jelly_timer/#editions",
+  "extension_store_url": "https://chromewebstore.google.com/detail/hihomdcgdeplhjmcegefnhinkiffpok",
   "release_notes": [
-    "Единый версионный контроль программы и экспортных сборок (v1.2.0 • Export #01)",
-    "Отображение версии и номера экспорта в Настройках, контекстном меню и свойствах .exe",
-    "Встроенная витрина Jelly Timer Plus (PRO) и динамическая синхронизация ссылок через GitHub",
-    "Подготовка браузерного расширения (Manifest V3 + иконки 16/32/48/128 + контекстное меню) к публикации в магазинах"
+    "Исправлено ложное срабатывание звукового сигнала при ручном уменьшении времени (-5м / -1м) до нуля",
+    "Выровнено по вертикальному центру положение цифр секундомера (00:00.0) в большом и среднем режимах",
+    "Добавлена встроенная форма поддержки (Forms) без использования личной почты",
+    "Динамическое определение актуальной версии без отката на старый кеш",
+    "Уточнено описание комплекта PRO (отправка отдельной Десктоп PRO-версии при приобретении)"
   ]
 }

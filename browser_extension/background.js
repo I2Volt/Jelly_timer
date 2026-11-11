@@ -1,6 +1,6 @@
-const EXT_VERSION = "1.2.0";
-const EXPORT_BUILD = 5;
-const BUILD_DATE = "2026-11-05";
+const EXT_VERSION = "1.2.2";
+const EXPORT_BUILD = 7;
+const BUILD_DATE = "2026-11-08";
 const REMOTE_VERSION_URL = "https://raw.githubusercontent.com/I2Volt/Jelly_timer/main/version_info.json";
 
 const DEFAULT_STATE = {
@@ -54,6 +54,7 @@ chrome.runtime.onInstalled.addListener(() => {
     const merged = {
       ...DEFAULT_STATE,
       ...(res.jellyState || {}),
+      visible: true,
       appVersion: EXT_VERSION,
       exportBuild: EXPORT_BUILD,
       buildDate: BUILD_DATE
@@ -64,11 +65,35 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Toggle widget visibility when clicking the extension toolbar icon
-chrome.action.onClicked.addListener(() => {
+// If clicked on a restricted page (chrome://newtab, Chrome Web Store, etc.) where content scripts are blocked,
+// ensure visible=true and open the built-in Jelly Timer workspace page where the floating timer is active.
+chrome.action.onClicked.addListener((tab) => {
   chrome.storage.local.get(["jellyState"], (res) => {
-    const st = res.jellyState || DEFAULT_STATE;
-    st.visible = !st.visible;
-    chrome.storage.local.set({ jellyState: st });
+    const st = { ...DEFAULT_STATE, ...(res.jellyState || {}) };
+    if (tab && typeof tab.id === "number") {
+      try {
+        chrome.tabs.sendMessage(tab.id, { type: "PING_ACTIVE_TAB" }, (resp) => {
+          const err = chrome.runtime.lastError;
+          if (!err && resp && resp.ok) {
+            st.visible = !st.visible;
+            chrome.storage.local.set({ jellyState: st });
+          } else {
+            st.visible = true;
+            chrome.storage.local.set({ jellyState: st }, () => {
+              chrome.tabs.create({ url: chrome.runtime.getURL("pro_upgrade.html") });
+            });
+          }
+        });
+      } catch (e) {
+        st.visible = true;
+        chrome.storage.local.set({ jellyState: st }, () => {
+          chrome.tabs.create({ url: chrome.runtime.getURL("pro_upgrade.html") });
+        });
+      }
+    } else {
+      st.visible = !st.visible;
+      chrome.storage.local.set({ jellyState: st });
+    }
   });
 });
 
@@ -135,9 +160,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     } else if (msg.type === "ADJUST_TIMER") {
       st.mode = "timer";
       st.timerRemaining = Math.max(0, Math.min(999 * 3600, st.timerRemaining + msg.delta));
-      if (!st.isRunning || st.timerRemaining > st.timerTotal) {
-        st.timerTotal = Math.max(1, st.timerRemaining);
+      if (st.timerRemaining <= 0) {
+        st.isRunning = false;
+        st.lastTimestamp = null;
       }
+      if ((!st.isRunning || st.timerRemaining > st.timerTotal) && st.timerRemaining > 0) {
+        st.timerTotal = st.timerRemaining;
+      }
+    } else if (msg.type === "TIMER_FINISHED") {
+      st.isRunning = false;
+      st.lastTimestamp = null;
+      st.timerRemaining = 0;
     } else if (msg.type === "SET_TIMER") {
       st.mode = "timer";
       st.isRunning = false;

@@ -3,6 +3,14 @@
   if (document.contentType && document.contentType.startsWith("image/")) return;
   window.__jellyTimerInjected = true;
 
+  const DEFAULT_HOTKEYS = {
+    summon: "ShiftRight",
+    play_pause: "Space",
+    reset: "KeyR",
+    switch_mode: "KeyM",
+    cycle_size: "KeyS"
+  };
+
   const I18N = {
     en: {
       timer: "Timer",
@@ -15,8 +23,17 @@
       hide: "Hide",
       min_short: "m",
       summon_label: "Focus / Summon key:",
+      hk_section_label: "Keyboard Shortcuts (click any button to rebind):",
+      hk_summon: "Summon / Focus timer",
+      hk_play: "Start / Pause",
+      hk_reset: "Reset",
+      hk_mode: "Switch Mode",
+      hk_size: "Change Size",
+      hk_press_any: "Press any key...",
+      hk_reset_defaults: "Reset defaults",
+      theme_label: "Theme:",
       language_label: "Language / Тіл / Язык:",
-      hint_html: "Press <b>Right Shift</b> or <b>Right Ctrl</b> to highlight the timer and control it with: <b>Space</b> (Start/Pause), <b>R</b> (Reset), <b>M</b> (Mode), <b>S</b> (Size), <b>Esc</b> (Exit).",
+      hint_html: "Press your <b>Summon key</b> to highlight the timer (white border), then use your action keys. Press <b>Esc</b> to release focus.",
       presets_label: "Large mode presets (minutes, comma-separated):",
       opacity_label: "Opacity",
       sound_label: "Alarm sound:",
@@ -43,8 +60,17 @@
       hide: "Скрыть",
       min_short: "м",
       summon_label: "Вызвать / Выбрать таймер:",
+      hk_section_label: "Горячие клавиши (нажмите на кнопку и введите любую клавишу):",
+      hk_summon: "Вызов / Фокус таймера",
+      hk_play: "Старт / Пауза",
+      hk_reset: "Сброс",
+      hk_mode: "Смена режима",
+      hk_size: "Смена размера",
+      hk_press_any: "Нажмите клавишу...",
+      hk_reset_defaults: "По умолчанию",
+      theme_label: "Тема оформления:",
       language_label: "Язык / Language / Тіл:",
-      hint_html: "Нажмите <b>Right Shift</b> или <b>Right Ctrl</b> — таймер подсветится белой рамкой и перехватит кнопки: <b>Space</b> (Старт/Пауза), <b>R</b> (Сброс), <b>M</b> (Режим), <b>S</b> (Размер), <b>Esc</b> (Выход).",
+      hint_html: "Нажмите клавишу <b>Вызова</b> — таймер подсветится белой рамкой и перехватит ваши клавиши управления. <b>Esc</b> — выход.",
       presets_label: "Пресеты большого режима (мин, через запятую):",
       opacity_label: "Прозрачность",
       sound_label: "Звуковой сигнал:",
@@ -71,8 +97,17 @@
       hide: "Жасыру",
       min_short: "м",
       summon_label: "Таймерді шақыру пернесі:",
+      hk_section_label: "Пернелерді баптау (өзгерту үшін батырманы басып, кез келген пернені басыңыз):",
+      hk_summon: "Таймерді шақыру / Фокус",
+      hk_play: "Бастау / Кідірту",
+      hk_reset: "Қалпына келтіру",
+      hk_mode: "Режимді ауыстыру",
+      hk_size: "Өлшемді өзгерту",
+      hk_press_any: "Пернені басыңыз...",
+      hk_reset_defaults: "Бастапқы қалпы",
+      theme_label: "Тақырып (Тема):",
       language_label: "Тіл / Language / Язык:",
-      hint_html: "<b>Right Shift</b> немесе <b>Right Ctrl</b> басыңыз — таймер ақ жиекпен белгіленіп, пернелерді басқарады: <b>Space</b> (Бастау/Кідірту), <b>R</b> (Қалпына келтіру), <b>M</b> (Режим), <b>S</b> (Өлшем), <b>Esc</b> (Шығу).",
+      hint_html: "<b>Шақыру пернесін</b> басыңыз — таймер ақ жиекпен белгіленіп, басқару пернелерін қабылдайды. <b>Esc</b> — шығу.",
       presets_label: "Үлкен режим пресеттері (мин, үтір арқылы):",
       opacity_label: "Мөлдірлік",
       sound_label: "Дыбыстық сигнал:",
@@ -102,10 +137,50 @@
     return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
   }
 
+  function formatKeyCode(code) {
+    if (!code) return "—";
+    const map = {
+      ShiftRight: "Right Shift",
+      ShiftLeft: "Left Shift",
+      ControlRight: "Right Ctrl",
+      ControlLeft: "Left Ctrl",
+      AltRight: "Right Alt",
+      AltLeft: "Left Alt",
+      MetaRight: "Right Meta",
+      MetaLeft: "Left Meta",
+      Space: "Space",
+      Enter: "Enter",
+      NumpadEnter: "Num Enter",
+      Tab: "Tab",
+      Backspace: "Backspace",
+      CapsLock: "Caps Lock",
+      Backquote: "` (~)",
+      Minus: "-",
+      Equal: "=",
+      BracketLeft: "[",
+      BracketRight: "]",
+      Backslash: "\\",
+      Semicolon: ";",
+      Quote: "'",
+      Comma: ",",
+      Period: ".",
+      Slash: "/",
+      ArrowUp: "↑ Up",
+      ArrowDown: "↓ Down",
+      ArrowLeft: "← Left",
+      ArrowRight: "→ Right"
+    };
+    if (map[code]) return map[code];
+    if (code.startsWith("Key") && code.length === 4) return code.slice(3);
+    if (code.startsWith("Digit") && code.length === 6) return code.slice(5);
+    if (code.startsWith("Numpad")) return "Num " + code.slice(6);
+    return code;
+  }
+
   const SIZES = {
     mini: { w: 208, h: 66 },
     medium: { w: 284, h: 138 },
-    large: { w: 348, h: 195 }
+    large: { w: 348, h: 204 }
   };
 
   const THEMES = {
@@ -118,20 +193,20 @@
       muted: "#A1A1AA"
     },
     warm_espresso: {
-      bg: "28, 25, 23",
-      border: "rgb(68, 64, 60)",
-      primaryBg: "#F5F5F4",
-      primaryFg: "#1C1917",
-      text: "#FAFAF9",
-      muted: "#A8A29E"
+      bg: "44, 29, 22",
+      border: "rgb(112, 78, 60)",
+      primaryBg: "#FDE68A",
+      primaryFg: "#26160F",
+      text: "#FFFBEB",
+      muted: "#D6C5B3"
     },
     soft_sage: {
-      bg: "22, 27, 24",
-      border: "rgb(55, 68, 60)",
-      primaryBg: "#D7EBDE",
-      primaryFg: "#141A16",
-      text: "#F2F8F4",
-      muted: "#94A89B"
+      bg: "20, 41, 33",
+      border: "rgb(58, 108, 88)",
+      primaryBg: "#A7F3D0",
+      primaryFg: "#0F291E",
+      text: "#ECFDF5",
+      muted: "#A7C4B5"
     }
   };
 
@@ -194,13 +269,7 @@
     lastTimestamp: null,
     presets: [5, 15, 25, 45, 60],
     globalHotkeys: false,
-    hotkeys: {
-      summon: "ShiftRight",
-      play_pause: "Space",
-      reset: "KeyR",
-      switch_mode: "KeyM",
-      cycle_size: "KeyS"
-    }
+    hotkeys: { ...DEFAULT_HOTKEYS }
   };
 
   // Create Shadow DOM host
@@ -254,7 +323,7 @@
       font-size: 11.5px;
       font-weight: 600;
       padding: 4px 8px;
-      transition: background 0.12s, color 0.12s;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
     }
     .btn:hover { background: rgba(255,255,255,0.13); color: #FAFAFA; }
     .btn.primary { background: #F4F4F5; color: #18181B; }
@@ -347,18 +416,19 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 390px;
+      width: 410px;
+      max-width: calc(100vw - 24px);
       background: #18181B;
       border: 1px solid #3F3F46;
       border-radius: 14px;
-      padding: 18px;
+      padding: 16px 18px;
       color: #F4F4F5;
       box-shadow: 0 18px 48px rgba(0,0,0,0.65);
       z-index: 2147483647;
       pointer-events: auto;
       display: none;
       flex-direction: column;
-      gap: 10px;
+      gap: 9px;
       font-size: 12px;
     }
     .settings-modal.open { display: flex; }
@@ -378,9 +448,49 @@
       background: #222226;
       color: #D4D4D8;
       font-size: 11px;
-      padding: 8px 10px;
+      padding: 7px 10px;
       border-radius: 6px;
-      line-height: 1.4;
+      line-height: 1.38;
+    }
+    .hk-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      background: #1F1F23;
+      border: 1px solid #2E2E34;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .hk-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11.5px;
+      color: #D4D4D8;
+    }
+    .hk-capture-btn {
+      min-width: 126px;
+      height: 24px;
+      padding: 2px 10px;
+      border-radius: 6px;
+      border: 1px solid #3F3F46;
+      background: #27272A;
+      color: #FAFAFA;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+    }
+    .hk-capture-btn:hover {
+      border-color: #71717A;
+      background: #303036;
+    }
+    .hk-capture-btn.recording {
+      border-color: #38BDF8;
+      background: rgba(14, 165, 233, 0.18);
+      color: #7DD3FC;
     }
   `;
   shadow.appendChild(style);
@@ -547,7 +657,7 @@
         <button class="btn" data-act="toggle_mode" style="width:28px;height:28px;padding:0;">${modeIcon}</button>
         <div class="time-box" data-act="time_box" style="font-size:18px;padding:0 6px;"></div>
         <button class="btn primary" data-act="play" style="width:28px;height:28px;padding:0;">${playIcon}</button>
-        <button class="btn" data-act="cycle_size" style="width:22px;height:24px;padding:0;">${SVGS.expand}</button>
+        <button class="btn" data-act="grow_size" title="${tr('grow')}" style="width:22px;height:24px;padding:0;">${SVGS.plus}</button>
         ${state.mode === "timer" ? `<div class="progress-track"><div class="progress-fill"></div></div>` : ""}
       `;
     } else if (state.sizeMode === "medium") {
@@ -563,7 +673,7 @@
             <button class="btn" data-act="close" title="${tr('hide')}" style="width:22px;height:22px;padding:0;">${SVGS.close}</button>
           </div>
         </div>
-        <div class="time-box" data-act="time_box" style="font-size:32px;margin:2px 0;"></div>
+        <div class="time-box" data-act="time_box" style="font-size:32px;margin:2px 0;padding-top:4px;"></div>
         <div class="bottom-row" style="justify-content:center;">
           <button class="btn primary" data-act="play" style="height:26px;width:108px;">${playIcon} <span>${playLabel}</span></button>
           ${showReset ? `<button class="btn" data-act="reset" style="width:34px;height:26px;padding:0;">${SVGS.reset}</button>` : ""}
@@ -574,20 +684,19 @@
       const presetList = (Array.isArray(state.presets) && state.presets.length) ? state.presets : [5, 15, 25, 45, 60];
       const presetBtns = presetList.map((m) => `<button class="btn" data-act="preset_${m}" style="flex:1;height:24px;">${m}${mShort}</button>`).join("");
       cardEl.style.flexDirection = "column";
-      cardEl.style.padding = "12px 12px 14px 12px";
+      cardEl.style.padding = "12px 12px 15px 12px";
       cardEl.innerHTML = `
         <div class="top-row">
           <button class="btn" data-act="toggle_mode" style="height:24px;">${modeIcon} <span>${modeLabel}</span> ${SVGS.swap}</button>
           <div style="display:flex;gap:4px;">
             <button class="btn" data-act="open_settings" title="${tr('settings')}" style="width:24px;height:24px;padding:0;">${SVGS.settings}</button>
             <button class="btn" data-act="shrink_size" title="${tr('shrink')}" style="width:24px;height:24px;padding:0;">${SVGS.minus}</button>
-            <button class="btn" data-act="grow_size" title="${tr('grow')}" style="width:24px;height:24px;padding:0;">${SVGS.plus}</button>
             <button class="btn" data-act="close" title="${tr('hide')}" style="width:24px;height:24px;padding:0;">${SVGS.close}</button>
           </div>
         </div>
-        <div class="time-box" data-act="time_box" style="font-size:40px;margin:2px 0;"></div>
-        ${state.mode === "timer" ? `<div class="preset-row">${presetBtns}</div>` : ""}
-        <div class="bottom-row" style="justify-content:center;">
+        <div class="time-box" data-act="time_box" style="${state.mode === "timer" ? "flex:0 0 auto;font-size:40px;margin:6px 0 4px 0;" : "flex:1;font-size:40px;margin:0;padding-top:6px;"}"></div>
+        ${state.mode === "timer" ? `<div class="preset-row" style="margin:0 0 8px 0;">${presetBtns}</div>` : ""}
+        <div class="bottom-row" style="justify-content:center;margin-bottom:4px;">
           ${state.mode === "timer" ? `
             <button class="btn" data-act="sub_5m" style="height:28px;">-5${mShort}</button>
             <button class="btn" data-act="sub_1m" style="height:28px;">-1${mShort}</button>
@@ -614,7 +723,6 @@
     const txt = formatSeconds(sec);
     tb.textContent = txt;
 
-    // Auto-scale font if hours are displayed in mini mode
     if (state.sizeMode === "mini") {
       tb.style.fontSize = txt.length > 7 ? "14.5px" : "18px";
     } else if (state.sizeMode === "medium") {
@@ -675,6 +783,8 @@
       const nextOp = Math.max(0.2, Math.min(1.0, Math.round((state.opacity + dir * 0.05) * 100) / 100));
       sendMsg({ type: "PATCH_STATE", patch: { opacity: nextOp } });
     } else if (state.mode === "timer" && !state.isRunning) {
+      alarmFlash = 0;
+      if (getLiveSeconds() + dir * 60 <= 0) prevLiveSec = 0;
       sendMsg({ type: "ADJUST_TIMER", delta: dir * 60 });
     }
   }, { passive: false });
@@ -684,13 +794,36 @@
   }
 
   let settingsOpen = false;
+  let recordingHkField = null;
+  let draftHotkeys = { ...DEFAULT_HOTKEYS };
+
   function openSettingsModal() {
     settingsOpen = true;
-    const ver = state.appVersion || "1.2.0";
-    const exp = String(state.exportBuild || 4).padStart(2, "0");
+    recordingHkField = null;
+    draftHotkeys = {
+      ...DEFAULT_HOTKEYS,
+      ...(state.hotkeys || {})
+    };
+    const ver = state.appVersion || "1.2.2";
+    const exp = String(state.exportBuild || 7).padStart(2, "0");
     const presetStr = (Array.isArray(state.presets) && state.presets.length ? state.presets : [5, 15, 25, 45, 60]).join(", ");
-    const curSummon = (state.hotkeys && state.hotkeys.summon) || "ShiftRight";
     const curLang = (state.lang && I18N[state.lang]) ? state.lang : detectDefaultLang();
+
+    const hkFields = [
+      ["summon", tr("hk_summon")],
+      ["play_pause", tr("hk_play")],
+      ["reset", tr("hk_reset")],
+      ["switch_mode", tr("hk_mode")],
+      ["cycle_size", tr("hk_size")]
+    ];
+
+    const hkRowsHtml = hkFields.map(([field, label]) => `
+      <div class="hk-row">
+        <span>${label}</span>
+        <button type="button" class="hk-capture-btn" data-hk-field="${field}">${formatKeyCode(draftHotkeys[field])}</button>
+      </div>
+    `).join("");
+
     settingsModalEl.innerHTML = `
       <div class="st-row">
         <strong style="font-size:14px;color:#FAFAFA;">${tr("settings")} • v${ver} (Exp #${exp})</strong>
@@ -698,19 +831,26 @@
       </div>
       <div class="st-row">
         <span>${tr("language_label")}</span>
-        <select id="stLang" class="st-input" style="width:155px;">
+        <select id="stLang" class="st-input" style="width:165px;">
           <option value="en" ${curLang === "en" ? "selected" : ""}>English (EN)</option>
           <option value="ru" ${curLang === "ru" ? "selected" : ""}>Русский (RU)</option>
           <option value="kz" ${curLang === "kz" ? "selected" : ""}>Қазақша (KZ)</option>
         </select>
       </div>
       <div class="st-row">
-        <span>${tr("summon_label")}</span>
-        <select id="stSummonKey" class="st-input" style="width:155px;">
-          <option value="ShiftRight" ${curSummon === "ShiftRight" ? "selected" : ""}>Right Shift</option>
-          <option value="ControlRight" ${curSummon === "ControlRight" ? "selected" : ""}>Right Ctrl</option>
-          <option value="AltRight" ${curSummon === "AltRight" ? "selected" : ""}>Right Alt</option>
+        <span>${tr("theme_label")}</span>
+        <select id="stTheme" class="st-input" style="width:165px;">
+          <option value="graphite" ${state.themeKey === "graphite" ? "selected" : ""}>${tr("ctx_th_graphite").replace(/^.*?:\s*/, "")}</option>
+          <option value="warm_espresso" ${state.themeKey === "warm_espresso" ? "selected" : ""}>${tr("ctx_th_espresso").replace(/^.*?:\s*/, "")}</option>
+          <option value="soft_sage" ${state.themeKey === "soft_sage" ? "selected" : ""}>${tr("ctx_th_sage").replace(/^.*?:\s*/, "")}</option>
         </select>
+      </div>
+      <div>
+        <div class="st-row" style="margin-bottom:5px;">
+          <span style="color:#A1A1AA;">${tr("hk_section_label")}</span>
+          <button type="button" class="btn" id="stResetHk" style="font-size:10.5px;padding:2px 7px;">${tr("hk_reset_defaults")}</button>
+        </div>
+        <div class="hk-grid">${hkRowsHtml}</div>
       </div>
       <div class="st-hint">${tr("hint_html")}</div>
       <div>
@@ -718,7 +858,7 @@
         <input id="stPresets" class="st-input" type="text" value="${presetStr}" />
       </div>
       <div class="st-row">
-        <span>${tr("opacity_label")} (${Math.round(state.opacity * 100)}%):</span>
+        <span id="stOpacityLabel">${tr("opacity_label")} (${Math.round(state.opacity * 100)}%):</span>
         <input id="stOpacity" type="range" min="20" max="100" value="${Math.round(state.opacity * 100)}" style="width:160px;" />
       </div>
       <div class="st-row">
@@ -732,7 +872,32 @@
     `;
     settingsModalEl.classList.add("open");
 
+    const refreshHkButtons = () => {
+      settingsModalEl.querySelectorAll(".hk-capture-btn").forEach((btn) => {
+        const f = btn.getAttribute("data-hk-field");
+        const isRec = (recordingHkField === f);
+        btn.classList.toggle("recording", isRec);
+        btn.textContent = isRec ? tr("hk_press_any") : formatKeyCode(draftHotkeys[f]);
+      });
+    };
+
+    settingsModalEl.querySelectorAll(".hk-capture-btn").forEach((btn) => {
+      btn.onclick = (ev) => {
+        ev.stopPropagation();
+        const f = btn.getAttribute("data-hk-field");
+        recordingHkField = (recordingHkField === f) ? null : f;
+        refreshHkButtons();
+      };
+    });
+
+    settingsModalEl.querySelector("#stResetHk").onclick = () => {
+      recordingHkField = null;
+      draftHotkeys = { ...DEFAULT_HOTKEYS };
+      refreshHkButtons();
+    };
+
     settingsModalEl.querySelector("#stCloseX").onclick = () => {
+      recordingHkField = null;
       settingsOpen = false;
       settingsModalEl.classList.remove("open");
     };
@@ -742,27 +907,38 @@
       sendMsg({ type: "PATCH_STATE", patch: { lang: nextLang } });
       openSettingsModal();
     };
+    settingsModalEl.querySelector("#stTheme").onchange = (ev) => {
+      const nextTheme = ev.target.value;
+      state.themeKey = nextTheme;
+      sendMsg({ type: "PATCH_STATE", patch: { themeKey: nextTheme } });
+      rebuildDOM();
+    };
     settingsModalEl.querySelector("#stTestSound").onclick = () => playWebAlarm();
     settingsModalEl.querySelector("#stOpenPro").onclick = () => {
+      recordingHkField = null;
       settingsOpen = false;
       settingsModalEl.classList.remove("open");
       sendMsg({ type: "OPEN_PRO_PAGE" });
     };
     settingsModalEl.querySelector("#stOpacity").oninput = (ev) => {
-      const val = parseInt(ev.target.value, 10) / 100.0;
+      const pct = parseInt(ev.target.value, 10);
+      const val = pct / 100.0;
+      const lbl = settingsModalEl.querySelector("#stOpacityLabel");
+      if (lbl) lbl.textContent = `${tr("opacity_label")} (${pct}%):`;
       sendMsg({ type: "PATCH_STATE", patch: { opacity: val } });
     };
     settingsModalEl.querySelector("#stSaveBtn").onclick = () => {
+      recordingHkField = null;
       const raw = settingsModalEl.querySelector("#stPresets").value.replace(/;/g, ",").split(",");
       const parsed = raw.map((x) => parseInt(x.trim(), 10)).filter((n) => !isNaN(n) && n > 0 && n <= 999).slice(0, 6);
-      const summonVal = settingsModalEl.querySelector("#stSummonKey").value;
       const langVal = settingsModalEl.querySelector("#stLang").value;
+      state.hotkeys = { ...draftHotkeys };
       sendMsg({
         type: "PATCH_STATE",
         patch: {
           lang: langVal,
           presets: parsed.length ? parsed : [5, 15, 25, 45, 60],
-          hotkeys: { ...(state.hotkeys || {}), summon: summonVal }
+          hotkeys: { ...draftHotkeys }
         }
       });
       settingsOpen = false;
@@ -773,8 +949,8 @@
   cardEl.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const ver = state.appVersion || "1.2.0";
-    const exp = String(state.exportBuild || 2).padStart(2, "0");
+    const ver = state.appVersion || "1.2.2";
+    const exp = String(state.exportBuild || 7).padStart(2, "0");
     const curLang = (state.lang && I18N[state.lang]) ? state.lang : detectDefaultLang();
     ctxMenuEl.innerHTML = `
       <div class="ctx-meta" style="display:flex;justify-content:space-between;align-items:center;">
@@ -991,10 +1167,21 @@
         if (Math.abs(p - state.opacity) < best) { best = Math.abs(p - state.opacity); idx = i; }
       });
       sendMsg({ type: "PATCH_STATE", patch: { opacity: presets[(idx + 1) % presets.length] } });
-    } else if (act === "sub_5m") sendMsg({ type: "ADJUST_TIMER", delta: -300 });
-    else if (act === "sub_1m") sendMsg({ type: "ADJUST_TIMER", delta: -60 });
-    else if (act === "add_1m") sendMsg({ type: "ADJUST_TIMER", delta: 60 });
-    else if (act === "add_5m") sendMsg({ type: "ADJUST_TIMER", delta: 300 });
+    } else if (act === "sub_5m") {
+      alarmFlash = 0;
+      if (getLiveSeconds() - 300 <= 0) prevLiveSec = 0;
+      sendMsg({ type: "ADJUST_TIMER", delta: -300 });
+    } else if (act === "sub_1m") {
+      alarmFlash = 0;
+      if (getLiveSeconds() - 60 <= 0) prevLiveSec = 0;
+      sendMsg({ type: "ADJUST_TIMER", delta: -60 });
+    } else if (act === "add_1m") {
+      alarmFlash = 0;
+      sendMsg({ type: "ADJUST_TIMER", delta: 60 });
+    } else if (act === "add_5m") {
+      alarmFlash = 0;
+      sendMsg({ type: "ADJUST_TIMER", delta: 300 });
+    }
     else if (act.startsWith("preset_")) {
       const mins = parseInt(act.split("_")[1], 10);
       sendMsg({ type: "SET_TIMER", seconds: mins * 60 });
@@ -1034,11 +1221,31 @@
     } catch (e) {}
   }
 
-  // Summon hotkey (Right Shift / Right Ctrl) & exclusive key capture when summoned
+  // Hotkey capture in Settings + Summon & Action Hotkeys
   window.addEventListener("keydown", (e) => {
+    if (settingsOpen && recordingHkField) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      if (e.code === "Escape") {
+        recordingHkField = null;
+      } else {
+        draftHotkeys[recordingHkField] = e.code;
+        recordingHkField = null;
+      }
+      settingsModalEl.querySelectorAll(".hk-capture-btn").forEach((btn) => {
+        const f = btn.getAttribute("data-hk-field");
+        const isRec = (recordingHkField === f);
+        btn.classList.toggle("recording", isRec);
+        btn.textContent = isRec ? tr("hk_press_any") : formatKeyCode(draftHotkeys[f]);
+      });
+      return;
+    }
+
     if (editingTime || settingsOpen) return;
-    const summonKey = (state.hotkeys && state.hotkeys.summon) || "ShiftRight";
-    if ((e.code === summonKey || e.code === "ShiftRight" || e.code === "ControlRight") && !e.repeat) {
+
+    const hk = { ...DEFAULT_HOTKEYS, ...(state.hotkeys || {}) };
+    if (e.code === hk.summon && !e.repeat) {
       summonedFocus = !summonedFocus;
       alarmFlash = 0;
       spScaleX.velocity += summonedFocus ? 1.4 : -1.1;
@@ -1060,15 +1267,15 @@
     if (e.repeat) return;
     if (e.code === "Escape") {
       summonedFocus = false;
-    } else if (e.code === "Space") {
+    } else if (e.code === hk.play_pause) {
       alarmFlash = 0;
       sendMsg({ type: "TOGGLE_PLAY" });
-    } else if (e.code === "KeyR" || e.code === "AltRight") {
+    } else if (e.code === hk.reset) {
       alarmFlash = 0;
       sendMsg({ type: "RESET" });
-    } else if (e.code === "KeyM") {
+    } else if (e.code === hk.switch_mode) {
       sendMsg({ type: "SWITCH_MODE" });
-    } else if (e.code === "KeyS") {
+    } else if (e.code === hk.cycle_size) {
       cycleSize();
     }
   }, true);
@@ -1079,10 +1286,22 @@
     }
   }, true);
 
+  // Respond to background service worker ping when user clicks extension icon
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg && msg.type === "PING_ACTIVE_TAB") {
+        spScaleX.velocity += 1.4;
+        spScaleY.velocity -= 1.4;
+        sendResponse({ ok: true, visible: state.visible });
+        return true;
+      }
+    });
+  }
+
   // Load initial state & subscribe to cross-tab storage changes
   chrome.storage.local.get(["jellyState"], (res) => {
     if (res.jellyState) {
-      state = { ...state, ...res.jellyState };
+      state = { ...state, ...res.jellyState, hotkeys: { ...DEFAULT_HOTKEYS, ...(res.jellyState.hotkeys || {}) } };
     }
     prevLiveSec = getLiveSeconds();
     applyDockedPositionFromState(true);
@@ -1091,7 +1310,11 @@
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes.jellyState && changes.jellyState.newValue) {
-      state = { ...state, ...changes.jellyState.newValue };
+      const nv = changes.jellyState.newValue;
+      state = { ...state, ...nv, hotkeys: { ...DEFAULT_HOTKEYS, ...(nv.hotkeys || {}) } };
+      if (!state.isRunning) {
+        prevLiveSec = getLiveSeconds();
+      }
       applyDockedPositionFromState(false);
       rebuildDOM();
     }
@@ -1113,11 +1336,16 @@
     }
 
     const curSec = getLiveSeconds();
-    if (state.mode === "timer" && prevLiveSec > 0 && curSec <= 0) {
+    if (state.mode === "timer" && state.isRunning && prevLiveSec > 0 && curSec <= 0) {
       alarmFlash = 6.0;
       spScaleX.velocity += 2.2;
       spScaleY.velocity -= 2.2;
       playWebAlarm();
+      state.isRunning = false;
+      state.lastTimestamp = null;
+      state.timerRemaining = 0;
+      rebuildDOM();
+      sendMsg({ type: "TIMER_FINISHED" });
     }
     prevLiveSec = curSec;
 
